@@ -2,9 +2,9 @@ import express from "express"
 import connected from "./database/connect.js";
 import dotenv from "dotenv"
 import cors from "cors"
-import router from "./Routes/Admin.js";
 import nodemailer from 'nodemailer';
 import userrouter from "./Routes/user.js";
+import adminrouter from "./Routes/Admin.js";
 
 
 dotenv.config()
@@ -22,7 +22,7 @@ app.use(cors({
 }));
 
 
-app.use("/Admin",router)
+app.use("/Admin",adminrouter)
 app.use("/user",userrouter)
 
 // Temporary OTP storage
