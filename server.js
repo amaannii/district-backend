@@ -25,20 +25,6 @@ app.use(cors({
 app.use("/Admin",adminrouter)
 app.use("/user",userrouter)
 
-// Temporary OTP storage
-const otpStore = {};
-
-// Generate 6-digit OTP
-const generateOTP = () =>
-  Math.floor(100000 + Math.random() * 900000);
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 
 
@@ -46,7 +32,9 @@ const transporter = nodemailer.createTransport({
 
 
 
-app.listen(3000,()=>{
+
+
+app.listen(3001,()=>{
 console.log("server is connected succefully");
 
 })
