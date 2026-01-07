@@ -1,9 +1,9 @@
 import express from "express"
 
-const router=express.Router()
+const adminrouter=express()
 
 
 // router.post()
 
 
-export default router
+export default adminrouter
