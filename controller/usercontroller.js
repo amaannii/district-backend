@@ -47,18 +47,29 @@ const otpStore = {}; // 👈 MUST be here (top of file)
 
 
 
-const verifyotp=async(req,res)=>{
+const verifyotp = async (req, res) => {
   const { email, otp } = req.body;
+  console.log(otp);
+  console.log(otpStore[email]);
 
-  if (otpStore[email] == otp) {
-    delete otpStore[email];
-    res.json({ message: 'OTP verified successfully' });
+  
+
+  if (!otpStore[email]) {
+    return res.status(400).json({ message: "OTP expired or not found" });
+  }
+
+  if (otpStore[email].otp === otp) {
+    delete otpStore[email]; // clear OTP after success
+    return res.json({ message: "OTP verified successfully" });
   } else {
-    res.status(400).json({ message: 'Invalid OTP' });
+    return res.status(400).json({ message: "Invalid OTP" });
   }
 };
+
+
+
 const signup=(req, res) => {
-  console.log(req.body); // 👈 ഇവിടെ data കാണണം
+  console.log(req.body);
 
   res.json({ message: "Signup success" });
 };
