@@ -1,20 +1,18 @@
 import nodemailer from "nodemailer";
-import dotenv from "dotenv"
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
-
-
 
 const otpStore = {}; // 👈 MUST be here (top of file)
 
- const sendotp = async (req, res) => {
+const sendotp = async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
@@ -25,7 +23,7 @@ const otpStore = {}; // 👈 MUST be here (top of file)
 
   otpStore[email] = {
     otp,
-    expiresAt: Date.now() + 5 * 60 * 1000
+    expiresAt: Date.now() + 5 * 60 * 1000,
   };
 
   console.log("OTP for", email, otp);
@@ -35,7 +33,7 @@ const otpStore = {}; // 👈 MUST be here (top of file)
       from: process.env.EMAIL,
       to: email,
       subject: "OTP Verification",
-      text: `Your OTP is ${otp}. Valid for 5 minutes.`
+      text: `Your OTP is ${otp}. Valid for 5 minutes.`,
     });
 
     res.status(200).json({ message: "OTP sent successfully" });
@@ -45,14 +43,10 @@ const otpStore = {}; // 👈 MUST be here (top of file)
   }
 };
 
-
-
 const verifyotp = async (req, res) => {
   const { email, otp } = req.body;
   console.log(otp);
   console.log(otpStore[email]);
-
-  
 
   if (!otpStore[email]) {
     return res.status(400).json({ message: "OTP expired or not found" });
@@ -66,17 +60,10 @@ const verifyotp = async (req, res) => {
   }
 };
 
-
-
-const signup=(req, res) => {
+const signup = (req, res) => {
   console.log(req.body);
 
   res.json({ message: "Signup success" });
 };
 
-
-export{
-    sendotp,
-    verifyotp,
-    signup
-}
+export { sendotp, verifyotp, signup };
