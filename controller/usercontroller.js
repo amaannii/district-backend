@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import userModel from "../models/users.js";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -44,26 +45,44 @@ const sendotp = async (req, res) => {
 };
 
 const verifyotp = async (req, res) => {
-  const { email, otp } = req.body;
-  console.log(otp);
-  console.log(otpStore[email]);
+  let { email, otp } = req.body;
+
+  email = email.trim().toLowerCase();
+
+  console.log("Frontend OTP:", otp);
+  console.log("Stored OTP:", otpStore[email]);
 
   if (!otpStore[email]) {
     return res.status(400).json({ message: "OTP expired or not found" });
   }
 
-  if (otpStore[email].otp === otp) {
-    delete otpStore[email]; // clear OTP after success
-    return res.json({ message: "OTP verified successfully" });
-  } else {
-    return res.status(400).json({ message: "Invalid OTP" });
+  if (otpStore[email].otp.toString() === otp.toString()) {
+    delete otpStore[email];
+    return res.json({ message: "OTP verified successfully",status:true });
   }
+
+  return res.status(400).json({ message: "Invalid OTP" });
 };
+
+
 
 const signup = (req, res) => {
   console.log(req.body);
+const {email,password,username,name}=req.body
+const users=new userModel({
+  email:email,
+  password:password,
+  username:username,
+  name:name
 
-  res.json({ message: "Signup success" });
+})
+users.save().then(()=>{
+  res.json({ success: true })})
+
+  .catch((err) => {
+    console.log(err);})
 };
+
+
 
 export { sendotp, verifyotp, signup };
