@@ -27,7 +27,7 @@ const sendotp = async (req, res) => {
     expiresAt: Date.now() + 5 * 60 * 1000,
   };
 
-  console.log("OTP for", email, otp);
+  console.log("OTP for", email, otp,otpStore[email]);
 
   try {
     await transporter.sendMail({
@@ -50,9 +50,9 @@ const verifyotp = async (req, res) => {
   email = email.trim().toLowerCase();
 
   console.log("Frontend OTP:", otp);
-  console.log("Stored OTP:", otpStore[email]);
+  console.log("Stored OTP:", otpStore[email].otp);
 
-  if (!otpStore[email]) {
+  if (!otpStore[email].otp) {
     return res.status(400).json({ message: "OTP expired or not found" });
   }
 
