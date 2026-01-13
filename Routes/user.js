@@ -1,16 +1,24 @@
-import express from "express"
-import { login, resetpassword, sendotp, signup, verifyotp } from "../controller/usercontroller.js"
+import express from "express";
+import {
+  addSampleNotifications,
+  confirmNotification,
+  deleteNotification,
+  login,
+  resetpassword,
+  sendotp,
+  signup,
+  verifyotp,
+} from "../controller/usercontroller.js";
 
+const userrouter = express();
 
-const userrouter=express()
+userrouter.post("/send-otp", sendotp);
+userrouter.post("/verify-otp", verifyotp);
+userrouter.post("/signup", signup);
+userrouter.post("/login", login);
+userrouter.post("/reset-password", resetpassword);
+userrouter.post("/sample", addSampleNotifications);
+userrouter.delete("/delete/:id", deleteNotification);
+userrouter.post("/confirm/:id", confirmNotification);
 
-userrouter.post('/send-otp',sendotp)
-userrouter.post('/verify-otp',verifyotp)
-userrouter.post('/signup',signup)
-userrouter.post('/login',login)
-userrouter.post('/reset-password',resetpassword)
-
-
-
-
-export default userrouter
+export default userrouter;

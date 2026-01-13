@@ -118,7 +118,6 @@ const login = async (req, res) => {
         email: user.email,
       },
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -126,7 +125,6 @@ const login = async (req, res) => {
     });
   }
 };
-
 
 const resetpassword = async (req, res) => {
   const { email, password } = req.body;
@@ -139,4 +137,94 @@ const resetpassword = async (req, res) => {
   res.json({ message: "Password updated successfully" });
 };
 
-export { sendotp, verifyotp, signup, login, resetpassword };
+
+// 🔹 Confirm connection
+const confirmNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const notification = await Notification.findByIdAndUpdate(
+      id,
+      { status: "connected" },
+      { new: true }
+    );
+
+    if (!notification)
+      return res.status(404).json({ error: "Notification not found" });
+
+    res.json({ message: "Notification confirmed", notification });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to confirm notification" });
+  }
+};
+
+// 🔹 Delete notification
+const deleteNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const notification = await Notification.findByIdAndDelete(id);
+
+    if (!notification)
+      return res.status(404).json({ error: "Notification not found" });
+
+    res.json({ message: "Notification deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete notification" });
+  }
+};
+
+// 🔹 Add sample notifications (optional, for testing)
+const addSampleNotifications = async (req, res) => {
+  try {
+    const sampleData = [
+      {
+        userId: "101",
+        username: "_Lunr",
+        avatar: "https://i.pravatar.cc/150?img=1",
+        message: "requested to connect you.",
+        date: "4d",
+        status: "pending",
+        group: "week",
+      },
+      {
+        userId: "102",
+        username: "yuv00_",
+        avatar: "https://i.pravatar.cc/150?img=2",
+        message: "Requested to connect you.",
+        date: "10 Nov",
+        status: "pending",
+        group: "month",
+      },
+      {
+        userId: "103",
+        username: "_Kaw",
+        avatar: "https://i.pravatar.cc/150?img=3",
+        message: "started connected you.",
+        date: "29 Nov",
+        status: "connected",
+        group: "earlier",
+      },
+    ];
+
+    const created = await Notification.insertMany(sampleData);
+    res.json({ message: "Sample notifications added", created });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to add sample notifications" });
+  }
+};
+
+export {
+  sendotp,
+  verifyotp,
+  signup,
+  login,
+  resetpassword,
+  addSampleNotifications,
+  deleteNotification,
+  confirmNotification,
+
+};
