@@ -3,6 +3,7 @@ import {
   addSampleNotifications,
   confirmNotification,
   deleteNotification,
+  googlelogin,
   login,
   resetpassword,
   sendotp,
@@ -20,5 +21,6 @@ userrouter.post("/reset-password", resetpassword);
 userrouter.post("/sample", addSampleNotifications);
 userrouter.delete("/delete/:id", deleteNotification);
 userrouter.post("/confirm/:id", confirmNotification);
+userrouter.post("/google-login",googlelogin);
 
 export default userrouter;

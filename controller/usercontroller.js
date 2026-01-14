@@ -137,7 +137,6 @@ const resetpassword = async (req, res) => {
   res.json({ message: "Password updated successfully" });
 };
 
-
 // 🔹 Confirm connection
 const confirmNotification = async (req, res) => {
   try {
@@ -217,6 +216,46 @@ const addSampleNotifications = async (req, res) => {
   }
 };
 
+const googlelogin = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    let user = await userModel.findOne({ email });
+
+    if (!user) {
+      const users = new userModel({
+        email: email,
+        name: name,
+      });
+      users
+        .save()
+        .then(() => {
+          res.status(200).json({
+            success: true,
+            user,
+          });
+        })
+        .catch((error) => {
+          res.status(500).json({
+            success: false,
+            message: "Google login failed",
+          });
+        });
+    } else {
+      if (email == useremail && name == username) {
+       res.json({success:true})
+      } else {
+       res.json({success:false})
+      }
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Google login failed",
+    });
+  }
+};
+
 export {
   sendotp,
   verifyotp,
@@ -226,5 +265,5 @@ export {
   addSampleNotifications,
   deleteNotification,
   confirmNotification,
-
+  googlelogin,
 };
