@@ -4,7 +4,7 @@ import dotenv from "dotenv"
 import cors from "cors"
 import nodemailer from 'nodemailer';
 import userrouter from "./Routes/user.js";
-import adminrouter from "./Routes/Admin.js";
+import adminrouter from "./Routes/admin.js";
 
 
 dotenv.config()
@@ -22,7 +22,7 @@ app.use(cors({
 }));
 
 
-app.use("/Admin",adminrouter)
+app.use("/admin",adminrouter)
 app.use("/user",userrouter)
 
 

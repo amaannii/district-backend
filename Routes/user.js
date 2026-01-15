@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addSampleNotifications,
+  completeProfile,
   confirmNotification,
   deleteNotification,
   googlelogin,
@@ -10,6 +11,7 @@ import {
   signup,
   verifyotp,
 } from "../controller/usercontroller.js";
+
 
 const userrouter = express();
 
@@ -22,5 +24,6 @@ userrouter.post("/sample", addSampleNotifications);
 userrouter.delete("/delete/:id", deleteNotification);
 userrouter.post("/confirm/:id", confirmNotification);
 userrouter.post("/google-login",googlelogin);
+userrouter.post("/complete-profile",completeProfile);
 
 export default userrouter;

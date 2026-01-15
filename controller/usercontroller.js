@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import userModel from "../models/users.js";
 import bcrypt from "bcrypt";
+import otpModel from "../models/otp.js";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -22,14 +23,17 @@ const sendotp = async (req, res) => {
   }
 
   const otp = Math.floor(10000 + Math.random() * 90000);
+  const newotp=new otpModel({
+    otp:otp,
+    email:email
+  })
+  await newotp.save()
 
-  otpStore[email] = {
-    otp,
-    expiresAt: Date.now() + 5 * 60 * 1000,
-  };
+  
+  
 
-  console.log("OTP for", email, otp, otpStore[email]);
-
+  console.log("OTP for", email, otp);
+ 
   try {
     await transporter.sendMail({
       from: process.env.EMAIL,
@@ -46,89 +50,107 @@ const sendotp = async (req, res) => {
 };
 
 const verifyotp = async (req, res) => {
-  let { email, otp } = req.body;
+  try {
+    let { email, otp } = req.body;
 
-  email = email.trim().toLowerCase();
+    // normalize email
+    email = email.trim().toLowerCase();
 
-  console.log("Frontend OTP:", otp);
-  console.log("Stored OTP:", otpStore[email].otp);
+    const otps = await otpModel.findOne({ email });
+    console.log("OTP record:", otps);
 
-  if (!otpStore[email].otp) {
-    return res.status(400).json({ message: "OTP expired or not found" });
+    // 🔴 FIRST CHECK: OTP exists or not
+    if (!otps) {
+      return res.status(400).json({
+        status: false,
+        message: "OTP expired or not found",
+      });
+    }
+
+    console.log("Frontend OTP:", otp);
+    console.log("Stored OTP:", otps.otp);
+
+    // 🔴 SECOND CHECK: OTP match
+    if (otps.otp.toString() === otp.toString()) {
+      await otpModel.deleteOne({ email });
+
+      return res.json({
+        status: true,
+        message: "OTP verified successfully",
+      });
+    }
+
+    return res.status(400).json({
+      status: false,
+      message: "Invalid OTP",
+    });
+
+  } catch (error) {
+    console.log("VERIFY OTP ERROR:", error);
+
+    res.status(500).json({
+      status: false,
+      message: error.message,
+    });
   }
-
-  if (otpStore[email].otp.toString() === otp.toString()) {
-    delete otpStore[email];
-    return res.json({ message: "OTP verified successfully", status: true });
-  }
-
-  return res.status(400).json({ message: "Invalid OTP" });
 };
 
-const signup = (req, res) => {
-  console.log(req.body);
-  const { email, password, username, name } = req.body;
-  const users = new userModel({
-    email: email,
-    password: password,
-    username: username,
-    name: name,
-  });
-  users
-    .save()
-    .then(() => {
-      res.json({ success: true });
-    })
 
-    .catch((err) => {
-      console.log(err);
+const signup = async (req, res) => {
+  try {
+    const { email, password, username, name } = req.body;
+
+    const hashedPassword = await bcrypt.hash(password, 10); // ✅ await
+
+    const users = new userModel({
+      email,
+      password: hashedPassword,
+      username,
+      name,
     });
+
+    await users.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.log("SIGNUP ERROR:", err);
+    res.status(500).json({ success: false });
+  }
 };
 
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+ 
+    
 
-    // 1️⃣ Find user by email only
     const user = await userModel.findOne({ email });
-
+    
+    
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ success: false });
     }
 
-    // 2️⃣ Compare entered password with hashed password
     const isMatch = bcrypt.compare(password, user.password);
-
+    
+    
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ success: false });
     }
 
-    // 3️⃣ Login success
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Login successful",
-      user: {
-        id: user._id,
-        email: user.email,
-      },
+      user: { id: user._id, email: user.email },
     });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+  } catch (err) {
+    res.status(500).json({ success: false });
   }
 };
 
+
 const resetpassword = async (req, res) => {
   const { email, password } = req.body;
-  console.log(email, password);
+
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -219,42 +241,62 @@ const addSampleNotifications = async (req, res) => {
 const googlelogin = async (req, res) => {
   try {
     const { name, email } = req.body;
+    console.log(name, email);
 
     let user = await userModel.findOne({ email });
+    console.log(user);
 
+    // 🟢 USER DOES NOT EXIST → CREATE
     if (!user) {
-      const users = new userModel({
-        email: email,
-        name: name,
+      const newUser = new userModel({
+        name,
+        email,
       });
-      users
-        .save()
-        .then(() => {
-          res.status(200).json({
-            success: true,
-            user,
-          });
-        })
-        .catch((error) => {
-          res.status(500).json({
-            success: false,
-            message: "Google login failed",
-          });
-        });
-    } else {
-      if (email == useremail && name == username) {
-       res.json({success:true})
-      } else {
-       res.json({success:false})
-      }
+
+      const savedUser = await newUser.save();
+
+      return res.status(200).json({
+        status: true,
+        user: savedUser,
+        message: "User created via Google login",
+      });
     }
+
+    // 🟢 USER EXISTS → LOGIN SUCCESS
+    return res.status(200).json({
+      success: true,
+      user,
+      message: "Google login successful",
+    });
+
   } catch (error) {
+    console.log("GOOGLE LOGIN ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: "Google login failed",
+      message: error.message,
     });
   }
 };
+
+const completeProfile=async(req,res)=>{
+const {password,username,email}=req.body
+ const hashedPassword = await bcrypt.hash(password, 10);
+let users= await userModel.updateOne({email:email},{$set:{password:hashedPassword,username:username}})
+if(users){
+res.status(200).json({
+      success: true,
+      message: "updated successfully",
+    });
+}else{
+  res.status(500).json({
+      success: false,
+      message: "problem while updating",
+    });
+}
+
+}
+
 
 export {
   sendotp,
@@ -266,4 +308,5 @@ export {
   deleteNotification,
   confirmNotification,
   googlelogin,
+  completeProfile
 };
