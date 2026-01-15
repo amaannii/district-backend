@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import userModel from "../models/users.js";
 import bcrypt from "bcrypt";
 import otpModel from "../models/otp.js";
+
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
