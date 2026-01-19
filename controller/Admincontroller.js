@@ -80,7 +80,7 @@ const getAllUsers = async (req, res) => {
 // GET ALL MESSAGES
 export const getAllMessages = async (req, res) => {
   try {
-    const messages = await Message.find().sort({ createdAt: -1 });
+    const messages = await userModel.find().sort({ createdAt: -1 });
     res.json({ success: true, messages });
   } catch (error) {
     res.status(500).json({ success: false });
@@ -90,7 +90,7 @@ export const getAllMessages = async (req, res) => {
 // GET ADMINS ONLY
 export const getAdmins = async (req, res) => {
   try {
-    const admins = await User.find({ role: "admin" }).select("-password");
+    const admins = await userModel.find({ role: "admin" }).select("-password");
     res.json({ success: true, admins });
   } catch (error) {
     res.status(500).json({ success: false });
