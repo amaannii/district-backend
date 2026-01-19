@@ -16,7 +16,17 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
   },
-});
+      isBlocked: {
+      type: Boolean,
+      default: false,
+    },
+    avatar: {
+      type: String,
+      default: "https://i.pravatar.cc/150",
+    },
+},
+ { timestamps: true }
+);
 
 
 const userModel = mongoose.model("users", userSchema);
