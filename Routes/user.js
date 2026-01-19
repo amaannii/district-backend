@@ -4,13 +4,16 @@ import {
   completeProfile,
   confirmNotification,
   deleteNotification,
+  deleteotp,
   googlelogin,
   login,
   resetpassword,
   sendotp,
   signup,
   verifyotp,
-} from "../controller/usercontroller.js";
+}
+ from "../controller/usercontroller.js";
+
 
 
 const userrouter = express();
@@ -25,5 +28,6 @@ userrouter.delete("/delete/:id", deleteNotification);
 userrouter.post("/confirm/:id", confirmNotification);
 userrouter.post("/google-login",googlelogin);
 userrouter.post("/complete-profile",completeProfile);
+userrouter.post("/delete-otp",deleteotp);
 
 export default userrouter;

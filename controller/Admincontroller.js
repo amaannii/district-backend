@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv"
+import userModel from "../models/users.js";
 
 dotenv.config()
 
@@ -22,7 +23,8 @@ if(email===adminemail&&password===adminpassword){
     );
     return res.status(200).json({
       success: true,
-      token, // 👈 send token to frontend
+      token,
+      role:"admin" // 👈 send token to frontend
     });
 }else{
      return res.status(401).json({
@@ -33,6 +35,70 @@ if(email===adminemail&&password===adminpassword){
 }
 
 
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await userModel.find().select("-password");
+
+    res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch users",
+    });
+  }
+};
+
+
+// 🔹 Block / Unblock user
+ const toggleBlockUser = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.isBlocked = !user.isBlocked;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User status updated",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update user",
+    });
+  }
+};
+
+
+// GET ALL MESSAGES
+export const getAllMessages = async (req, res) => {
+  try {
+    const messages = await Message.find().sort({ createdAt: -1 });
+    res.json({ success: true, messages });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+};
+
+// GET ADMINS ONLY
+export const getAdmins = async (req, res) => {
+  try {
+    const admins = await User.find({ role: "admin" }).select("-password");
+    res.json({ success: true, admins });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+};
+
 export{
     adminlogin,
+    toggleBlockUser,
+    getAllUsers,
 }
