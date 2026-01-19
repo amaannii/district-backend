@@ -147,19 +147,19 @@ const deleteotp = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("a");
+   
 
     const user = await userModel.findOne({ email });
-    console.log("b");
+   
     if (!user) {
-      console.log("c");
+     
       return res.status(401).json({ success: false });
     }
 
     const isMatch = bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      console.log("d");
+    
       return res.status(401).json({ success: false });
     }
     const token = jwt.sign(
@@ -177,7 +177,7 @@ const login = async (req, res) => {
       role: "user",
       user: { id: user._id, email: user.email },
     });
-    console.log("e");
+  
   } catch (err) {
     res.status(500).json({ success: false });
     if (user.isBlocked) {
