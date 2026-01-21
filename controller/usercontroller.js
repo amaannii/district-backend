@@ -4,6 +4,7 @@ import userModel from "../models/users.js";
 import bcrypt from "bcrypt";
 import otpModel from "../models/otp.js";
 import jwt from "jsonwebtoken";
+import ActivityLog from "../models/ActivityLog.js";
 
 dotenv.config();
 
@@ -147,48 +148,58 @@ const deleteotp = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-   
-
     const user = await userModel.findOne({ email });
-   
     if (!user) {
-     
-      return res.status(401).json({ success: false });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
-
-    const isMatch = bcrypt.compare(password, user.password);
-
+    if (user.isBlocked) {
+      return res.status(403).json({ success: false, message: "Your account is blocked by admin" });
+    }
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-    
-      return res.status(401).json({ success: false });
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
+
+
+        const log = new ActivityLog({
+          userName: user.name,
+          email: email,
+          role: "User",
+          action: "LOGIN",
+          description: "User Logged In",
+          ip: req.ip,
+          device: req.headers["user-agent"],
+          time:new Date()
+        });
+    
+        await log.save();
+
+    // Generate JWT
     const token = jwt.sign(
       {
         id: user._id,
-        role: "user",
+        role: "User",
         email: user.email,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
+
     res.status(200).json({
       success: true,
-      token: token,
-      role: "user",
+      token,
+      role: "User",
       user: { id: user._id, email: user.email },
     });
-  
-  } catch (err) {
-    res.status(500).json({ success: false });
-    if (user.isBlocked) {
-  return res.status(403).json({
-    message: "Your account is blocked by admin",
-  });
-}
 
+  } catch (err) {
+    console.error("User login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
- 
+
+
 const resetpassword = async (req, res) => {
   const { email, password } = req.body;
 
@@ -207,7 +218,7 @@ const confirmNotification = async (req, res) => {
     const notification = await Notification.findByIdAndUpdate(
       id,
       { status: "connected" },
-      { new: true }
+      { new: true },
     );
 
     if (!notification)
@@ -323,7 +334,7 @@ const completeProfile = async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
   let users = await userModel.updateOne(
     { email: email },
-    { $set: { password: hashedPassword, username: username } }
+    { $set: { password: hashedPassword, username: username } },
   );
   if (users) {
     res.status(200).json({
@@ -349,5 +360,5 @@ export {
   confirmNotification,
   googlelogin,
   completeProfile,
-  deleteotp
+  deleteotp,
 };

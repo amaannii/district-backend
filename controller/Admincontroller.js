@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv"
 import userModel from "../models/users.js";
+import ActivityLog from "../models/ActivityLog.js";
 
 dotenv.config()
 
@@ -8,31 +9,52 @@ const adminemail="admin@gmail.com"
 const adminpassword="admin123"
 
 
-const adminlogin=(req,res)=>{
-const {email,password}=req.body
-if(email===adminemail&&password===adminpassword){
+const adminlogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (email !== adminemail || password !== adminpassword) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid admin credentials",
+      });
+    }
+
+    // 🔹 Save admin login activity using .save()
+    const log = new ActivityLog({
+      userName: "Admin",
+      email: email,
+      role: "Admin",
+      action: "LOGIN",
+      description: "Admin logged in",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time:new Date
+    });
+
+    await log.save(); // ✅ Save to DB
+
+    // 🔹 Generate token
     const token = jwt.sign(
-      {
-        role: "admin",
-        email: adminemail,
-      },
+      { role: "admin", email },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
+      { expiresIn: "1d" }
     );
-    return res.status(200).json({
+
+    res.status(200).json({
       success: true,
       token,
-      role:"admin" // 👈 send token to frontend
+      role: "admin",
     });
-}else{
-     return res.status(401).json({
-    success: false,
-    message: "Invalid admin credentials",
-  });
-}
-}
+  } catch (error) {
+    console.error("Admin login error:", error);
+    res.status(500).json({ success: false });
+  }
+};
+
+export default adminlogin;
+
+
 
 
 const getAllUsers = async (req, res) => {
@@ -97,8 +119,85 @@ export const getAdmins = async (req, res) => {
   }
 };
 
+
+ const saveLoginLog = async (req, user) => {
+  try {
+    await LoginLog.create({
+      userName: user.name || "Admin",
+      email: user.email,
+      role: user.role,
+      ip: req.ip,
+      device: req.headers["user-agent"],
+    });
+  } catch (error) {
+    console.error("Login log error:", error);
+  }
+};
+
+
+export const getLoginLogs = async (req, res) => {
+  try {
+    // Fetch all activity logs sorted by time (latest first)
+    const logs = await ActivityLog.find()
+      .select("userName email role ip device action description time")
+      .sort({ time: -1 });
+
+    res.status(200).json(
+      logs.map(log => ({
+        _id: log._id,
+        userName: log.userName,
+        email: log.email,
+        role: log.role,
+        ip: log.ip,
+        device: log.device,
+        action: log.action,
+        description: log.description,
+        time: log.time,
+      }))
+    );
+  } catch (error) {
+    console.error("Login logs error:", error);
+    res.status(500).json({ message: "Failed to fetch login logs" });
+  }
+};
+
+
+
+export const getReports = async (req, res) => {
+  const reports = await Report.find({ status: "pending" });
+  res.json(reports);
+};
+
+export const blockUser = async (req, res) => {
+  const report = await Report.findById(req.params.id);
+
+  await User.findByIdAndUpdate(
+    report.reportedUser.userId,
+    { isBlocked: true }
+  );
+
+  report.status = "blocked";
+  await report.save();
+
+  res.json({ success: true });
+};
+
+export const dismissReport = async (req, res) => {
+  await Report.findByIdAndUpdate(req.params.id, {
+    status: "dismissed",
+  });
+  res.json({ success: true });
+};
+
+
+
+
+
+
+
 export{
     adminlogin,
     toggleBlockUser,
     getAllUsers,
+    saveLoginLog,
 }
