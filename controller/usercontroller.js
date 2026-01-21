@@ -169,6 +169,7 @@ const login = async (req, res) => {
           action: "LOGIN",
           description: "User Logged In",
           ip: req.ip,
+          log:"logged in",
           device: req.headers["user-agent"],
           time:new Date()
         });

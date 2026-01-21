@@ -11,6 +11,9 @@ const activityLogSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    log: {
+      type: String,
+    },
 
     email: {
       type: String,
@@ -41,11 +44,11 @@ const activityLogSchema = new mongoose.Schema(
     device: {
       type: String,
     },
-    time:{
-        type:Date,
-    }
+    time: {
+      type: Date,
+    },
   },
-  { timestamps: true } // createdAt = activity time
+  { timestamps: true }, // createdAt = activity time
 );
 
 const ActivityLog = mongoose.model("ActivityLog", activityLogSchema);

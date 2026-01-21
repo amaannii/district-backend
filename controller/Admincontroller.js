@@ -28,6 +28,7 @@ const adminlogin = async (req, res) => {
       action: "LOGIN",
       description: "Admin logged in",
       ip: req.ip,
+      log:"logged in",
       device: req.headers["user-agent"],
       time:new Date
     });
@@ -139,22 +140,11 @@ export const getLoginLogs = async (req, res) => {
   try {
     // Fetch all activity logs sorted by time (latest first)
     const logs = await ActivityLog.find()
-      .select("userName email role ip device action description time")
       .sort({ time: -1 });
+      console.log(logs);
+      
 
-    res.status(200).json(
-      logs.map(log => ({
-        _id: log._id,
-        userName: log.userName,
-        email: log.email,
-        role: log.role,
-        ip: log.ip,
-        device: log.device,
-        action: log.action,
-        description: log.description,
-        time: log.time,
-      }))
-    );
+    res.status(200).json({logs:logs});
   } catch (error) {
     console.error("Login logs error:", error);
     res.status(500).json({ message: "Failed to fetch login logs" });
