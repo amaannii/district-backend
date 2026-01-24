@@ -10,10 +10,12 @@ import {
   resetpassword,
   sendotp,
   signup,
+  userdetails,
   verifyotp,
  
 }
  from "../controller/usercontroller.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 
 
@@ -30,5 +32,6 @@ userrouter.post("/confirm/:id", confirmNotification);
 userrouter.post("/google-login",googlelogin);
 userrouter.post("/complete-profile",completeProfile);
 userrouter.post("/delete-otp",deleteotp);
+userrouter.post("/userdetails",authMiddleware,userdetails);
 
 export default userrouter;

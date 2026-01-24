@@ -350,6 +350,18 @@ const completeProfile = async (req, res) => {
   }
 };
 
+const userdetails=async (req, res) => {
+  // Access stored data from middleware
+  console.log(req.user);
+  
+const user=await userModel.findOne({email:req.user.email})
+
+  res.json({
+    message: "User details fetched",
+    user:user
+  }); 
+}
+
 export {
   sendotp,
   verifyotp,
@@ -362,4 +374,5 @@ export {
   googlelogin,
   completeProfile,
   deleteotp,
+  userdetails
 };
