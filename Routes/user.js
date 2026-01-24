@@ -10,6 +10,7 @@ import {
   resetpassword,
   sendotp,
   signup,
+  upload,
   userdetails,
   verifyotp,
  
@@ -33,5 +34,6 @@ userrouter.post("/google-login",googlelogin);
 userrouter.post("/complete-profile",completeProfile);
 userrouter.post("/delete-otp",deleteotp);
 userrouter.post("/userdetails",authMiddleware,userdetails);
+userrouter.post("/upload",authMiddleware,upload);
 
 export default userrouter;
