@@ -362,6 +362,31 @@ const user=await userModel.findOne({email:req.user.email})
   }); 
 }
 
+
+const upload=async(req,res)=>{
+const {img}=req.body
+const {email,role}=req.user
+console.log(img);
+console.log(email);
+
+
+const users=await userModel.updateOne({email:email},{$set:{img:img}},{upsert:true})
+console.log(users);
+
+
+if(users){
+  res.status(200).json({
+      success:true
+  })
+}else{
+  res.status(400).json({
+      success:false
+  })
+}
+
+
+
+}
 export {
   sendotp,
   verifyotp,
@@ -374,5 +399,6 @@ export {
   googlelogin,
   completeProfile,
   deleteotp,
-  userdetails
+  userdetails,
+  upload
 };
