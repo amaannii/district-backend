@@ -1,5 +1,7 @@
 import express from "express";
+
 import {
+
   addSampleNotifications,
   completeProfile,
   confirmNotification,
@@ -7,6 +9,7 @@ import {
   deleteotp,
   googlelogin,
   login,
+  posting,
   resetpassword,
   sendotp,
   signup,
@@ -35,5 +38,7 @@ userrouter.post("/complete-profile",completeProfile);
 userrouter.post("/delete-otp",deleteotp);
 userrouter.post("/userdetails",authMiddleware,userdetails);
 userrouter.post("/upload",authMiddleware,upload);
+userrouter.post("/posting",authMiddleware,posting);
 
 export default userrouter;
+ 

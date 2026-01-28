@@ -40,6 +40,9 @@ const userSchema = new mongoose.Schema(
     },
     img:{
       type:String,
+    },
+    post:{
+      type:Array
     }
         
   },

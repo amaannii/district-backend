@@ -387,6 +387,24 @@ if(users){
 
 
 }
+
+const posting=async(req,res)=>{
+const {post}=req.body
+const {email,role}=req.user
+const users=await userModel.updateOne({email:email},{$set:{post:post}},{upsert:true})
+console.log(users);
+if(users){
+  res.status(200).json({
+      success:true
+  })
+}else{
+  res.status(400).json({
+      success:false
+  })
+}
+}
+
+
 export {
   sendotp,
   verifyotp,
@@ -400,5 +418,6 @@ export {
   completeProfile,
   deleteotp,
   userdetails,
-  upload
+  upload,
+  posting
 };
