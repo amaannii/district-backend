@@ -41,9 +41,16 @@ const userSchema = new mongoose.Schema(
     img:{
       type:String,
     },
-    post:{
-      type:Array
-    }
+    post: [
+    {
+      image: String,
+      caption: String,
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ]
         
   },
   { timestamps: true },

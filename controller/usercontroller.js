@@ -150,31 +150,36 @@ const login = async (req, res) => {
     const { email, password } = req.body;
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
     if (user.isBlocked) {
-      return res.status(403).json({ success: false, message: "Your account is blocked by admin" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Your account is blocked by admin" });
     }
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
+    const log = new ActivityLog({
+      userName: user.name,
+      email: email,
+      role: "User",
+      action: "LOGIN",
+      description: "User Logged In",
+      ip: req.ip,
+      log: "logged in",
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
-        const log = new ActivityLog({
-          userName: user.name,
-          email: email,
-          role: "User",
-          action: "LOGIN",
-          description: "User Logged In",
-          ip: req.ip,
-          log:"logged in",
-          device: req.headers["user-agent"],
-          time:new Date()
-        });
-    
-        await log.save();
+    await log.save();
 
     // Generate JWT
     const token = jwt.sign(
@@ -184,7 +189,7 @@ const login = async (req, res) => {
         email: user.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     res.status(200).json({
@@ -193,13 +198,11 @@ const login = async (req, res) => {
       role: "User",
       user: { id: user._id, email: user.email },
     });
-
   } catch (err) {
     console.error("User login error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 const resetpassword = async (req, res) => {
   const { email, password } = req.body;
@@ -350,60 +353,101 @@ const completeProfile = async (req, res) => {
   }
 };
 
-const userdetails=async (req, res) => {
+const userdetails = async (req, res) => {
   // Access stored data from middleware
   console.log(req.user);
-  
-const user=await userModel.findOne({email:req.user.email})
+
+  const user = await userModel.findOne({ email: req.user.email });
 
   res.json({
     message: "User details fetched",
-    user:user
-  }); 
-}
+    user: user,
+  });
+};
 
+const upload = async (req, res) => {
+  const { img } = req.body;
+  const { email, role } = req.user;
+  console.log(img);
+  console.log(email);
 
-const upload=async(req,res)=>{
-const {img}=req.body
-const {email,role}=req.user
-console.log(img);
-console.log(email);
+  const users = await userModel.updateOne(
+    { email: email },
+    { $set: { img: img } },
+    { upsert: true },
+  );
+  console.log(users);
 
+  if (users) {
+    res.status(200).json({
+      success: true,
+    });
+  } else {
+    res.status(400).json({
+      success: false,
+    });
+  }
+};
 
-const users=await userModel.updateOne({email:email},{$set:{img:img}},{upsert:true})
-console.log(users);
+const posting = async (req, res) => {
+  try {
+    const { image, caption } = req.body;
+    const { email } = req.user;
 
+    const user = await userModel.findOneAndUpdate(
+      { email },
+      {
+        $push: {
+          post: {
+            image,
+            caption,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { new: true, upsert: true },
+    );
 
-if(users){
-  res.status(200).json({
-      success:true
-  })
-}else{
-  res.status(400).json({
-      success:false
-  })
-}
+    res.status(200).json({
+      success: true,
+      post: user.post,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+};
 
+const explorePosts = async (req, res) => {
+  try {
+    const users = await userModel.find(
+      { post: { $exists: true, $ne: [] } },
+      { username: 1, img: 1, post: 1 },
+    );
 
+    let allPosts = [];
 
-}
+    users.forEach((user) => {
+      user.post.forEach((p) => {
+        allPosts.push({
+          image: p.image,
+          caption: p.caption,
+          createdAt: p.createdAt,
+          username: user.username,
+          userImg: user.img,
+        });
+      });
+    });
 
-const posting=async(req,res)=>{
-const {post}=req.body
-const {email,role}=req.user
-const users=await userModel.updateOne({email:email},{$set:{post:post}},{upsert:true})
-console.log(users);
-if(users){
-  res.status(200).json({
-      success:true
-  })
-}else{
-  res.status(400).json({
-      success:false
-  })
-}
-}
+    // newest first
+    allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
+    res.status(200).json(allPosts);
+  } catch (error) {
+    console.error("Explore error:", error);
+    res.status(500).json({ success: false });
+  }
+};
 
 export {
   sendotp,
@@ -419,5 +463,6 @@ export {
   deleteotp,
   userdetails,
   upload,
-  posting
+  posting,
+  explorePosts,
 };

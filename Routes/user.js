@@ -7,6 +7,7 @@ import {
   confirmNotification,
   deleteNotification,
   deleteotp,
+  explorePosts,
   googlelogin,
   login,
   posting,
@@ -39,6 +40,7 @@ userrouter.post("/delete-otp",deleteotp);
 userrouter.post("/userdetails",authMiddleware,userdetails);
 userrouter.post("/upload",authMiddleware,upload);
 userrouter.post("/posting",authMiddleware,posting);
+userrouter.get("/posts/explore", explorePosts); 
 
 export default userrouter;
  
