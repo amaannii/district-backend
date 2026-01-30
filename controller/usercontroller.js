@@ -214,6 +214,7 @@ const resetpassword = async (req, res) => {
   res.json({ message: "Password updated successfully" });
 };
 
+
 // 🔹 Confirm connection
 const confirmNotification = async (req, res) => {
   try {
@@ -332,6 +333,7 @@ const googlelogin = async (req, res) => {
     });
   }
 };
+
 
 const completeProfile = async (req, res) => {
   const { password, username, email } = req.body;
