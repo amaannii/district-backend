@@ -449,40 +449,6 @@ const explorePosts = async (req, res) => {
   }
 };
 
-const followUser = async (req, res) => {
-  const userId = req.user.id; // logged in user
-  const targetId = req.params.id; // profile being viewed
-
-  if (userId === targetId) {
-    return res.status(400).json({ message: "Cannot follow yourself" });
-  }
-
-  await User.findByIdAndUpdate(userId, {
-    $addToSet: { following: targetId },
-  });
-
-  await User.findByIdAndUpdate(targetId, {
-    $addToSet: { followers: userId },
-  });
-
-  res.json({ success: true });
-};
-
-const unfollowUser = async (req, res) => {
-  const userId = req.user.id;
-  const targetId = req.params.id;
-
-  await User.findByIdAndUpdate(userId, {
-    $pull: { following: targetId },
-  });
-
-  await User.findByIdAndUpdate(targetId, {
-    $pull: { followers: userId },
-  });
-
-  res.json({ success: true });
-};
-
 const allusers = async (req, res) => {
   try {
     const users = await userModel.find({}, { password: 0, email: 0 });
@@ -614,8 +580,6 @@ export {
   upload,
   posting,
   explorePosts,
-  unfollowUser,
-  followUser,
   allusers,
   request,
   notifications,
