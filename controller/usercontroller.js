@@ -449,6 +449,155 @@ const explorePosts = async (req, res) => {
   }
 };
 
+const followUser = async (req, res) => {
+  const userId = req.user.id; // logged in user
+  const targetId = req.params.id; // profile being viewed
+
+  if (userId === targetId) {
+    return res.status(400).json({ message: "Cannot follow yourself" });
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    $addToSet: { following: targetId },
+  });
+
+  await User.findByIdAndUpdate(targetId, {
+    $addToSet: { followers: userId },
+  });
+
+  res.json({ success: true });
+};
+
+const unfollowUser = async (req, res) => {
+  const userId = req.user.id;
+  const targetId = req.params.id;
+
+  await User.findByIdAndUpdate(userId, {
+    $pull: { following: targetId },
+  });
+
+  await User.findByIdAndUpdate(targetId, {
+    $pull: { followers: userId },
+  });
+
+  res.json({ success: true });
+};
+
+const allusers = async (req, res) => {
+  try {
+    const users = await userModel.find({}, { password: 0, email: 0 });
+
+    if (users.length > 0) {
+      res.json({
+        success: true,
+        users: users,
+      });
+    } else {
+      res.json({
+        success: false,
+        message: "No users found",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+const request = async (req, res) => {
+  try {
+    const { username } = req.body;
+    const email = req.user.email;
+
+    // 🔹 sender
+    const sender = await userModel.findOne(
+      { email },
+      { _id: 1, username: 1, name: 1, img: 1 },
+    );
+
+    if (!sender) {
+      return res.status(404).json({ message: "Sender not found" });
+    }
+
+    // 🔹 receiver
+    const receiver = await userModel.findOne({ username });
+
+    if (!receiver) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🔹 request object with date
+    const requestData = {
+      username: sender.username,
+      name: sender.name,
+      img: sender.img,
+      Date: new Date(), // ✅ DATE ADDED
+    };
+
+    // 🔹 prevent duplicates
+    await userModel.updateOne(
+      { username },
+      { $addToSet: { request: requestData } },
+    );
+
+    res.json({
+      success: true,
+      message: "Request sent successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const notifications = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const user = await userModel.findOne({ email }, { request: 1 });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      request: user.request || [],
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+const notificationdelete = async (req, res) => {
+  const { id } = req.body;
+  const email = req.user.email;
+
+  const users = await userModel.updateOne(
+    { email: email },
+    {
+      $pull: {
+        request: { _id: id },
+      },
+    },
+  );
+
+  if (users) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false });
+  }
+};
+
 export {
   sendotp,
   verifyotp,
@@ -465,4 +614,10 @@ export {
   upload,
   posting,
   explorePosts,
+  unfollowUser,
+  followUser,
+  allusers,
+  request,
+  notifications,
+  notificationdelete,
 };
