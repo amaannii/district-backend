@@ -9,13 +9,13 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       unique: true,
-      sparse: true
+      sparse: true,
     },
     password: {
       type: String,
     },
     name: {
-      type: String, 
+      type: String,
     },
     isBlocked: {
       type: Boolean,
@@ -38,21 +38,36 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    img:{
-      type:String,
+    img: {
+      type: String,
     },
     post: [
-    {
-      image: String,
-      caption: String,
-      createdAt: {
-        type: Date,
-        default: Date.now,
+      {
+        image: String,
+        caption: String,
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
-    },
-  ]
-        
+    ],
+    request: [
+      {
+
+        username: String,
+        name: String,
+        img: String,
+        Date:Date
+      },
+    ],
+
+    connected: [
+      {
+        username: String,
+      },
+    ],
   },
+
   { timestamps: true },
 );
 

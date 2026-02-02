@@ -3,6 +3,7 @@ import express from "express";
 import {
 
   addSampleNotifications,
+  allusers,
   completeProfile,
   confirmNotification,
   deleteNotification,
@@ -10,7 +11,10 @@ import {
   explorePosts,
   googlelogin,
   login,
+  notificationdelete,
+  notifications,
   posting,
+  request,
   resetpassword,
   sendotp,
   signup,
@@ -41,6 +45,10 @@ userrouter.post("/userdetails",authMiddleware,userdetails);
 userrouter.post("/upload",authMiddleware,upload);
 userrouter.post("/posting",authMiddleware,posting);
 userrouter.get("/posts/explore", explorePosts); 
+userrouter.get("/allusers", allusers); 
+userrouter.post("/request",authMiddleware,request);
+userrouter.get("/notifications",authMiddleware,notifications);
+userrouter.post("/notificationdelete",authMiddleware,notificationdelete);
 
 export default userrouter;
  
