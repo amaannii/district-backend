@@ -544,6 +544,55 @@ const notifications = async (req, res) => {
   }
 };
 
+const confirmnotification = async (req, res) => {
+  try {
+    const { username } = req.body
+    const email = req.user.email
+
+    // get request array
+    const data = await userModel.findOne(
+      { email },
+      { request: 1, _id: 0 }
+    )
+
+    if (!data || !data.request) {
+      return res.json({ success: false, message: "No requests found" })
+    }
+
+    // find matching user
+    const connected = data.request.find(
+      u => u.username === username
+    )
+
+    if (!connected) {
+      return res.json({ success: false, message: "User not found in requests" })
+    }
+
+    // add to both users
+    await userModel.updateOne(
+      { username },
+      { $push: { connecting: connected } }
+    )
+
+    await userModel.updateOne(
+      { email },
+      { $push: { connected: connected } }
+    )
+
+    // remove from request array
+    await userModel.updateOne(
+      { email },
+      { $pull: { request: { username } } }
+    )
+
+    res.json({ success: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ success: false })
+  }
+}
+
+
 const notificationdelete = async (req, res) => {
   const { id } = req.body;
   const email = req.user.email;
@@ -584,4 +633,5 @@ export {
   request,
   notifications,
   notificationdelete,
+  confirmnotification
 };
