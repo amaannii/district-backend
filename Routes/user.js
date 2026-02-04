@@ -5,6 +5,7 @@ import {
   addSampleNotifications,
   allusers,
   completeProfile,
+  confirmnotification,
   confirmNotification,
   deleteNotification,
   deleteotp,
@@ -49,6 +50,7 @@ userrouter.get("/allusers", allusers);
 userrouter.post("/request",authMiddleware,request);
 userrouter.get("/notifications",authMiddleware,notifications);
 userrouter.post("/notificationdelete",authMiddleware,notificationdelete);
+userrouter.post("/confirmnotification",authMiddleware,confirmnotification);
 
 export default userrouter;
  

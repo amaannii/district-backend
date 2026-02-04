@@ -63,9 +63,22 @@ const userSchema = new mongoose.Schema(
 
     connected: [
       {
+
         username: String,
+        name: String,
+        img: String,
+        Date:Date
       },
     ],
+    connecting: [
+      {
+
+        username: String,
+        name: String,
+        img: String,
+        Date:Date
+      },
+    ]
   },
 
   { timestamps: true },
