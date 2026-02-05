@@ -10,6 +10,7 @@ import {
   deleteNotification,
   deleteotp,
   explorePosts,
+  getFeedPosts,
   googlelogin,
   login,
   notificationdelete,
@@ -35,7 +36,7 @@ userrouter.post("/send-otp", sendotp);
 userrouter.post("/verify-otp", verifyotp);
 userrouter.post("/signup", signup);
 userrouter.post("/login", login);
-userrouter.post("/reset-password", resetpassword);
+userrouter.post("/reset-password",resetpassword);
 userrouter.post("/sample", addSampleNotifications);
 userrouter.delete("/delete/:id", deleteNotification);
 userrouter.post("/confirm/:id", confirmNotification);
@@ -51,6 +52,8 @@ userrouter.post("/request",authMiddleware,request);
 userrouter.get("/notifications",authMiddleware,notifications);
 userrouter.post("/notificationdelete",authMiddleware,notificationdelete);
 userrouter.post("/confirmnotification",authMiddleware,confirmnotification);
+userrouter.get("/feed", authMiddleware, getFeedPosts);
+
 
 export default userrouter;
  
