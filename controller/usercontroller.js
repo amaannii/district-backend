@@ -549,11 +549,18 @@ const confirmnotification = async (req, res) => {
     const { username } = req.body
     const email = req.user.email
 
+    console.log(username);
+    console.log(email);
+    
+
     // get request array
     const data = await userModel.findOne(
       { email },
       { request: 1, _id: 0 }
     )
+
+    let connecting = await userModel.findOne({email:email},{_id:0,username:1,img:1,name:1})
+    connecting.Date=new Date()
 
     if (!data || !data.request) {
       return res.json({ success: false, message: "No requests found" })
@@ -571,7 +578,7 @@ const confirmnotification = async (req, res) => {
     // add to both users
     await userModel.updateOne(
       { username },
-      { $push: { connecting: connected } }
+      { $push: { connecting: connecting } }
     )
 
     await userModel.updateOne(
@@ -613,6 +620,87 @@ const notificationdelete = async (req, res) => {
   }
 };
 
+const getFeedPosts = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    // 1. Find logged-in user
+    const user = await userModel.findOne(
+      { email },
+      { connecting: 1, _id: 1 }
+    );
+    // console.log(user);
+    
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // 2. Get connected usernames (because you store username)
+    const connectedUsernames = user.connecting.map((u) => u.username);
+    // console.log(connectedUsernames);
+    
+
+    // 3. Include own username also
+    connectedUsernames.push(user.username);
+
+    // console.log(connectedUsernames);
+    
+
+    // 4. Fetch connected users with their posts
+    const connectedUsers = await userModel.find(
+      { username: { $in: connectedUsernames } },
+      { username: 1, img: 1, post: 1 }
+    );
+    // console.log(connectedUsers);
+    
+
+    // 5. Flatten posts into one feed array
+    let feedPosts = [];
+
+    connectedUsers.forEach((u) => {
+      u.post.forEach((p) => {
+        feedPosts.push({
+          _id: p._id,
+          image: p.image,
+          caption: p.caption,
+          createdAt: p.createdAt,
+
+          // attach user info
+          userId: {
+            username: u.username,
+            img: u.img
+          }
+        });
+      });
+    });
+    // console.log(feedPosts);
+    
+
+    // 6. Sort latest posts first
+    feedPosts.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    res.json({
+      success: true,
+      posts: feedPosts
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
+
+
 export {
   sendotp,
   verifyotp,
@@ -633,5 +721,6 @@ export {
   request,
   notifications,
   notificationdelete,
-  confirmnotification
+  confirmnotification,
+  getFeedPosts
 };
