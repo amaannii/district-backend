@@ -2,6 +2,7 @@ import express from "express";
 
 import {
 
+  addComment,
   addSampleNotifications,
   allusers,
   completeProfile,
@@ -12,6 +13,7 @@ import {
   explorePosts,
   getFeedPosts,
   googlelogin,
+  likePost,
   login,
   notificationdelete,
   notifications,
@@ -53,6 +55,11 @@ userrouter.get("/notifications",authMiddleware,notifications);
 userrouter.post("/notificationdelete",authMiddleware,notificationdelete);
 userrouter.post("/confirmnotification",authMiddleware,confirmnotification);
 userrouter.get("/feed", authMiddleware, getFeedPosts);
+userrouter.post("/like-post", authMiddleware, likePost);
+userrouter.post("/add-comment", authMiddleware, addComment);
+
+
+
 
 
 export default userrouter;
