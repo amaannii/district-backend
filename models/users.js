@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    
     password: {
       type: String,
     },
@@ -38,26 +39,25 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
     img: {
       type: String,
     },
+
    post: [
   {
     image: String,
     caption: String,
-
     likes: {
       type: Number,
       default: 0,
     },
-
     likedBy: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
       },
     ],
-
     comments: [
       {
         userId: {
@@ -72,13 +72,13 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
-
     createdAt: {
       type: Date,
       default: Date.now,
     },
   },
 ],
+
 
     request: [
       {
@@ -90,6 +90,7 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
+
     connected: [
       {
 
@@ -99,6 +100,8 @@ const userSchema = new mongoose.Schema(
         Date:Date
       },
     ],
+
+
     connecting: [
       {
 
@@ -107,7 +110,16 @@ const userSchema = new mongoose.Schema(
         img: String,
         Date:Date
       },
-    ]
+    ],
+
+      note: {
+    type: String,
+    default: "",
+  },
+
+  noteCreatedAt: {
+    type: Date,
+  },
   },
 
   { timestamps: true },

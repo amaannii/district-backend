@@ -16,6 +16,8 @@ import {
   googlelogin,
   likePost,
   login,
+  note,
+  notes,
   notificationdelete,
   notifications,
   posting,
@@ -59,6 +61,8 @@ userrouter.get("/feed", authMiddleware, getFeedPosts);
 userrouter.get("/image", authMiddleware, getimage);
 userrouter.post("/like-post", authMiddleware, likePost);
 userrouter.post("/add-comment", authMiddleware, addComment);
+userrouter.get("/notes", authMiddleware,notes)
+userrouter.post("/note", authMiddleware,note)
 
 
 
