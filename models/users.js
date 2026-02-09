@@ -41,16 +41,45 @@ const userSchema = new mongoose.Schema(
     img: {
       type: String,
     },
-    post: [
+   post: [
+  {
+    image: String,
+    caption: String,
+
+    likes: {
+      type: Number,
+      default: 0,
+    },
+
+    likedBy: [
       {
-        image: String,
-        caption: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "users",
+      },
+    ],
+
+    comments: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "users",
+        },
+        username: String,
+        text: String,
         createdAt: {
           type: Date,
           default: Date.now,
         },
       },
     ],
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
+
     request: [
       {
 
