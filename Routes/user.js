@@ -12,6 +12,7 @@ import {
   deleteotp,
   explorePosts,
   getFeedPosts,
+  getimage,
   googlelogin,
   likePost,
   login,
@@ -55,10 +56,9 @@ userrouter.get("/notifications",authMiddleware,notifications);
 userrouter.post("/notificationdelete",authMiddleware,notificationdelete);
 userrouter.post("/confirmnotification",authMiddleware,confirmnotification);
 userrouter.get("/feed", authMiddleware, getFeedPosts);
+userrouter.get("/image", authMiddleware, getimage);
 userrouter.post("/like-post", authMiddleware, likePost);
 userrouter.post("/add-comment", authMiddleware, addComment);
-
-
 
 
 
