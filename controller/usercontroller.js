@@ -796,6 +796,54 @@ const getimage = async (req, res) => {
 };
 
 
+const notes= async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const me = await userModel.findOne({ email });
+
+    // Get connected user IDs
+    const connectedIds = me.connected.map((u) => u.userId);
+
+    // Fetch connected users notes
+    const connectedUsers = await userModel.find({
+      _id: { $in: connectedIds },
+    }).select("username avatar note noteCreatedAt");
+
+    res.json({
+      success: true,
+      myNote: {
+        username: me.username,
+        avatar: me.avatar,
+        note: me.note,
+      },
+      connectedNotes: connectedUsers,
+    });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+}
+
+const note=async (req, res) => {
+  try {
+    const { note } = req.body;
+    const email = req.user.email;
+
+    await userModel.updateOne(
+      { email },
+      {
+        $set: {
+          note: note,
+          noteCreatedAt: new Date(),
+        },
+      }
+    );
+
+    res.json({ success: true, message: "Note updated" });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+}
 
 
 
@@ -821,8 +869,10 @@ export {
   notificationdelete,
   confirmnotification,
   getFeedPosts,
-  getimage
+  getimage,
   addComment,
   likePost,
+  notes,
+  note
 
 };
