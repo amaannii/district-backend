@@ -698,6 +698,36 @@ const getFeedPosts = async (req, res) => {
   }
 };
 
+const getimage = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    // Find logged-in user
+    const user = await userModel.findOne(
+      {email:email},
+      { img: 1, _id: 0 }
+    );
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      image: user.img,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
 
 
@@ -722,5 +752,6 @@ export {
   notifications,
   notificationdelete,
   confirmnotification,
-  getFeedPosts
+  getFeedPosts,
+  getimage
 };

@@ -11,6 +11,7 @@ import {
   deleteotp,
   explorePosts,
   getFeedPosts,
+  getimage,
   googlelogin,
   login,
   notificationdelete,
@@ -53,6 +54,7 @@ userrouter.get("/notifications",authMiddleware,notifications);
 userrouter.post("/notificationdelete",authMiddleware,notificationdelete);
 userrouter.post("/confirmnotification",authMiddleware,confirmnotification);
 userrouter.get("/feed", authMiddleware, getFeedPosts);
+userrouter.get("/image", authMiddleware, getimage);
 
 
 export default userrouter;
