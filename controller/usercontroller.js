@@ -619,46 +619,39 @@ const notificationdelete = async (req, res) => {
     res.json({ success: false });
   }
 };
-
 const getFeedPosts = async (req, res) => {
   try {
     const email = req.user.email;
+    const currentUserId = req.user.id;
 
     // 1. Find logged-in user
     const user = await userModel.findOne(
       { email },
-      { connecting: 1, _id: 1 }
+      { connecting: 1, username: 1 }
     );
-    // console.log(user);
-    
 
     if (!user) {
       return res.json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
-    // 2. Get connected usernames (because you store username)
-    const connectedUsernames = user.connecting.map((u) => u.username);
-    // console.log(connectedUsernames);
-    
+    // 2. Connected usernames
+    const connectedUsernames = user.connecting.map(
+      (u) => u.username
+    );
 
-    // 3. Include own username also
+    // 3. Include own posts
     connectedUsernames.push(user.username);
 
-    // console.log(connectedUsernames);
-    
-
-    // 4. Fetch connected users with their posts
+    // 4. Fetch connected users with posts
     const connectedUsers = await userModel.find(
       { username: { $in: connectedUsernames } },
       { username: 1, img: 1, post: 1 }
     );
-    // console.log(connectedUsers);
-    
 
-    // 5. Flatten posts into one feed array
+    // 5. Flatten posts
     let feedPosts = [];
 
     connectedUsers.forEach((u) => {
@@ -669,31 +662,32 @@ const getFeedPosts = async (req, res) => {
           caption: p.caption,
           createdAt: p.createdAt,
 
-          // attach user info
+          // ✅ ADD THESE
+          likes: p.likes || 0,
+          comments: p.comments || [],
+          isLiked: p.likedBy?.includes(currentUserId),
+
           userId: {
             username: u.username,
-            img: u.img
-          }
+            img: u.img,
+          },
         });
       });
     });
-    // console.log(feedPosts);
-    
 
-    // 6. Sort latest posts first
+    // 6. Sort latest first
     feedPosts.sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
     res.json({
       success: true,
-      posts: feedPosts
+      posts: feedPosts,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -731,6 +725,80 @@ const getimage = async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+/* ---------------- LIKE / UNLIKE POST ---------------- */
+ const likePost = async (req, res) => {
+  try {
+    const userId = req.user.id; // from auth middleware
+    const { postId } = req.body;
+
+    const user = await userModel.findOne({ "post._id": postId });
+    if (!user) return res.status(404).json({ success: false });
+
+    const post = user.post.id(postId);
+
+    const alreadyLiked = post.likedBy.includes(userId);
+
+    if (alreadyLiked) {
+      post.likes -= 1;
+      post.likedBy.pull(userId);
+    } else {
+      post.likes += 1;
+      post.likedBy.push(userId);
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      likes: post.likes,
+      isLiked: !alreadyLiked,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/* ---------------- ADD COMMENT ---------------- */
+ const addComment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { postId, text } = req.body;
+
+    const user = await userModel.findOne({ "post._id": postId });
+    if (!user) return res.status(404).json({ success: false });
+
+    const post = user.post.id(postId);
+
+    const commenter = await userModel.findById(userId).select("username");
+
+    post.comments.push({
+      userId,
+      username: commenter.username,
+      text,
+    });
+
+    await user.save();
+
+    res.json({
+      success: true,
+      comments: post.comments,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+
+
+
 export {
   sendotp,
   verifyotp,
@@ -754,4 +822,7 @@ export {
   confirmnotification,
   getFeedPosts,
   getimage
+  addComment,
+  likePost,
+
 };
