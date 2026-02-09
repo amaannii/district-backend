@@ -800,15 +800,18 @@ const notes= async (req, res) => {
   try {
     const email = req.user.email;
 
+    // Current user
     const me = await userModel.findOne({ email });
 
-    // Get connected user IDs
-    const connectedIds = me.connected.map((u) => u.userId);
+    // My connections (IDs)
+    const connectedIds = me.connected.map((c) => c.userId);
 
-    // Fetch connected users notes
-    const connectedUsers = await userModel.find({
+    // Fetch all connected users notes
+    const connectedNotes = await userModel.find({
       _id: { $in: connectedIds },
-    }).select("username avatar note noteCreatedAt");
+      note: { $ne: "" }, // only users who have note
+    })
+    .select("username avatar note noteCreatedAt");
 
     res.json({
       success: true,
@@ -817,12 +820,13 @@ const notes= async (req, res) => {
         avatar: me.avatar,
         note: me.note,
       },
-      connectedNotes: connectedUsers,
+      connectedNotes,
     });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
 }
+
 
 const note=async (req, res) => {
   try {
