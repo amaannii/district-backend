@@ -796,36 +796,40 @@ const getimage = async (req, res) => {
 };
 
 
-const notes= async (req, res) => {
+const notes = async (req, res) => {
   try {
     const email = req.user.email;
 
     // Current user
     const me = await userModel.findOne({ email });
 
-    // My connections (IDs)
-    const connectedIds = me.connected.map((c) => c.userId);
+    // Get connected usernames
+    const connectedUsernames = me.connected.map((c) => c.username);
 
-    // Fetch all connected users notes
+    // Fetch connected users who have notes
     const connectedNotes = await userModel.find({
-      _id: { $in: connectedIds },
-      note: { $ne: "" }, // only users who have note
-    })
-    .select("username avatar note noteCreatedAt");
+      username: { $in: connectedUsernames },
+      note: { $ne: "" }, // only users who wrote a note
+    }).select("username img note noteCreatedAt");
 
     res.json({
       success: true,
+
+      // My note
       myNote: {
         username: me.username,
-        avatar: me.avatar,
+        img: me.img,
         note: me.note,
       },
+
+      // Connected users notes
       connectedNotes,
     });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
-}
+};
+
 
 
 const note=async (req, res) => {
