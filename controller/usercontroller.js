@@ -147,9 +147,16 @@ const deleteotp = async (req, res) => {
 
 const login = async (req, res) => {
   try {
+    
+    
     const { email, password } = req.body;
+    console.log(email,password);
+    
     const user = await userModel.findOne({ email });
+    console.log(user);
+    
     if (!user) {
+    
       return res
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
@@ -844,7 +851,7 @@ const note=async (req, res) => {
           note: note,
           noteCreatedAt: new Date(),
         },
-      }
+      } 
     );
 
     res.json({ success: true, message: "Note updated" });
