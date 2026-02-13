@@ -8,6 +8,7 @@ import {
   completeProfile,
   confirmnotification,
   confirmNotification,
+  deletedimg,
   deleteNotification,
   deleteotp,
   explorePosts,
@@ -63,6 +64,7 @@ userrouter.post("/like-post", authMiddleware, likePost);
 userrouter.post("/add-comment", authMiddleware, addComment);
 userrouter.get("/notes", authMiddleware,notes)
 userrouter.post("/note", authMiddleware,note)
+userrouter.post("/deleted", authMiddleware,deletedimg)
 
 
 
