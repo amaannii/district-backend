@@ -861,6 +861,99 @@ const note=async (req, res) => {
 }
 
 
+const updatePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { caption } = req.body;
+    const email = req.user.email;
+
+    // Find user who owns the post
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Find post inside user's post array
+    const post = user.post.id(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    // Update caption
+    post.caption = caption;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Post updated successfully",
+      post,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+
+const deletePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const email = req.user.email;
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const post = user.post.id(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    // Remove post
+    post.deleteOne();
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Post deleted successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
 
 export {
   sendotp,
@@ -888,6 +981,8 @@ export {
   addComment,
   likePost,
   notes,
-  note
+  note,
+  updatePost,
+  deletePost,
 
 };
