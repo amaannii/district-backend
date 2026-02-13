@@ -8,6 +8,7 @@ import {
   completeProfile,
   confirmnotification,
   confirmNotification,
+  deletedimg,
   deleteNotification,
   deleteotp,
   deletePost,
@@ -65,10 +66,11 @@ userrouter.post("/like-post", authMiddleware, likePost);
 userrouter.post("/add-comment", authMiddleware, addComment);
 userrouter.get("/notes", authMiddleware,notes)
 userrouter.post("/note", authMiddleware,note)
+
 userrouter.put("/update-post/:postId", authMiddleware,updatePost);
 userrouter.delete("/delete-post/:postId", authMiddleware,deletePost);
 
-
+userrouter.post("/deleted", authMiddleware,deletedimg)
 
 
 

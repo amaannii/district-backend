@@ -730,15 +730,6 @@ const getimage = async (req, res) => {
 };
 
 
-
-
-
-
-
-
-
-
-
 /* ---------------- LIKE / UNLIKE POST ---------------- */
  const likePost = async (req, res) => {
   try {
@@ -859,6 +850,37 @@ const note=async (req, res) => {
     res.json({ success: false, error: err.message });
   }
 }
+
+const deletedimg = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const result = await userModel.updateOne(
+      { email: email },
+      { $set: { img: "" } }
+    );
+
+    if (result.modifiedCount > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Image deleted successfully",
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "No image found or already deleted",
+      });
+    }
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+  
 
 
 const updatePost = async (req, res) => {
@@ -982,7 +1004,10 @@ export {
   likePost,
   notes,
   note,
+
   updatePost,
   deletePost,
+  deletedimg
+
 
 };
