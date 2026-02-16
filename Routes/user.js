@@ -5,9 +5,11 @@ import {
   addComment,
   addSampleNotifications,
   allusers,
+  // cancelRequest,
   completeProfile,
   confirmnotification,
   confirmNotification,
+  // connectionStatus,
   deletedimg,
   deleteNotification,
   deleteotp,
@@ -26,7 +28,9 @@ import {
   request,
   resetpassword,
   sendotp,
+  sendPostToChats,
   signup,
+  // unconnect,
   updatePost,
   upload,
   userdetails,
@@ -70,7 +74,15 @@ userrouter.post("/note", authMiddleware,note)
 userrouter.put("/update-post/:postId", authMiddleware,updatePost);
 userrouter.delete("/delete-post/:postId", authMiddleware,deletePost);
 
-userrouter.post("/deleted", authMiddleware,deletedimg)
+userrouter.post("/deleted", authMiddleware,deletedimg);
+// userrouter.post("/cancel-request", authMiddleware,cancelRequest);
+// userrouter.post("/unconnect", authMiddleware,unconnect);
+// userrouter.get("/connection-status/:username", authMiddleware,connectionStatus);
+userrouter.post(
+  "/send-post-to-chats",authMiddleware,sendPostToChats);
+
+
+
 
 
 
