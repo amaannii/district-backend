@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
-    
+
     password: {
       type: String,
     },
@@ -44,90 +44,110 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
 
- post: [
-  {
-    image: String,
-    caption: String,
-    createdAt: { type: Date, default: Date.now },
+    post: [
+      {
+        image: String,
+        caption: String,
+        createdAt: { type: Date, default: Date.now },
 
-    likes: { type: Number, default: 0 },
-    likedBy: { type: [mongoose.Schema.Types.ObjectId], default: [] },
+        likes: { type: Number, default: 0 },
+        likedBy: { type: [mongoose.Schema.Types.ObjectId], default: [] },
 
-    comments: [
-  {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    username: {
-      type: String,
-      required: true,
-    },
-    text: {
-      type: String,
-      required: true,
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-],
+        comments: [
+          {
+            userId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "User",
+              required: true,
+            },
+            username: {
+              type: String,
+              required: true,
+            },
+            text: {
+              type: String,
+              required: true,
+            },
+            createdAt: {
+              type: Date,
+              default: Date.now,
+            },
+          },
+        ],
 
-      default: [],
-    },
+        default: [],
+      },
+    ],
 
-],
-
-//     createdAt: {
-//       type: Date,
-//       default: Date.now,
-//     },
-//   },
-// ],
-
+    //     createdAt: {
+    //       type: Date,
+    //       default: Date.now,
+    //     },
+    //   },
+    // ],
 
     request: [
       {
-
         username: String,
         name: String,
         img: String,
-        Date:Date
+        Date: Date,
       },
     ],
-
 
     connected: [
       {
-
         username: String,
         name: String,
         img: String,
-        Date:Date
+        Date: Date,
       },
     ],
-
 
     connecting: [
       {
-
         username: String,
         name: String,
         img: String,
-        Date:Date
+        Date: Date,
       },
     ],
 
-      note: {
-    type: String,
-    default: "",
-  },
+    note: {
+      type: String,
+      default: "",
+    },
+    gender: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      maxlength: 250,
+      default: "",
+    },
 
-  noteCreatedAt: {
-    type: Date,
-  },
+   commentsPermission: {
+  type: String,
+  enum: ["followers", "followback", "off"],
+  default: "followers",
+},
+
+
+    notifications: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+      duration: {
+        type: String,
+        default: "for 2 days",
+      },
+    },
+
+    noteCreatedAt: {
+      type: Date,
+    },
   },
 
   { timestamps: true },

@@ -147,16 +147,13 @@ const deleteotp = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    
-    
     const { email, password } = req.body;
-    console.log(email,password);
-    
+    console.log(email, password);
+
     const user = await userModel.findOne({ email });
     console.log(user);
-    
+
     if (!user) {
-    
       return res
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
@@ -553,59 +550,52 @@ const notifications = async (req, res) => {
 
 const confirmnotification = async (req, res) => {
   try {
-    const { username } = req.body
-    const email = req.user.email
+    const { username } = req.body;
+    const email = req.user.email;
 
     console.log(username);
     console.log(email);
-    
 
     // get request array
-    const data = await userModel.findOne(
-      { email },
-      { request: 1, _id: 0 }
-    )
+    const data = await userModel.findOne({ email }, { request: 1, _id: 0 });
 
-    let connecting = await userModel.findOne({email:email},{_id:0,username:1,img:1,name:1})
-    connecting.Date=new Date()
+    let connecting = await userModel.findOne(
+      { email: email },
+      { _id: 0, username: 1, img: 1, name: 1 },
+    );
+    connecting.Date = new Date();
 
     if (!data || !data.request) {
-      return res.json({ success: false, message: "No requests found" })
+      return res.json({ success: false, message: "No requests found" });
     }
 
     // find matching user
-    const connected = data.request.find(
-      u => u.username === username
-    )
+    const connected = data.request.find((u) => u.username === username);
 
     if (!connected) {
-      return res.json({ success: false, message: "User not found in requests" })
+      return res.json({
+        success: false,
+        message: "User not found in requests",
+      });
     }
 
     // add to both users
     await userModel.updateOne(
       { username },
-      { $push: { connecting: connecting } }
-    )
+      { $push: { connecting: connecting } },
+    );
 
-    await userModel.updateOne(
-      { email },
-      { $push: { connected: connected } }
-    )
+    await userModel.updateOne({ email }, { $push: { connected: connected } });
 
     // remove from request array
-    await userModel.updateOne(
-      { email },
-      { $pull: { request: { username } } }
-    )
+    await userModel.updateOne({ email }, { $pull: { request: { username } } });
 
-    res.json({ success: true })
+    res.json({ success: true });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ success: false })
+    console.error(error);
+    res.status(500).json({ success: false });
   }
-}
-
+};
 
 const notificationdelete = async (req, res) => {
   const { id } = req.body;
@@ -634,7 +624,7 @@ const getFeedPosts = async (req, res) => {
     // 1. Find logged-in user
     const user = await userModel.findOne(
       { email },
-      { connecting: 1, username: 1 }
+      { connecting: 1, username: 1 },
     );
 
     if (!user) {
@@ -645,9 +635,7 @@ const getFeedPosts = async (req, res) => {
     }
 
     // 2. Connected usernames
-    const connectedUsernames = user.connecting.map(
-      (u) => u.username
-    );
+    const connectedUsernames = user.connecting.map((u) => u.username);
 
     // 3. Include own posts
     connectedUsernames.push(user.username);
@@ -655,7 +643,7 @@ const getFeedPosts = async (req, res) => {
     // 4. Fetch connected users with posts
     const connectedUsers = await userModel.find(
       { username: { $in: connectedUsernames } },
-      { username: 1, img: 1, post: 1 }
+      { username: 1, img: 1, post: 1 },
     );
 
     // 5. Flatten posts
@@ -663,31 +651,26 @@ const getFeedPosts = async (req, res) => {
 
     connectedUsers.forEach((u) => {
       u.post.forEach((p) => {
-      feedPosts.push({
-  _id: p._id,
-  image: p.image,
-  caption: p.caption,
-  createdAt: p.createdAt,
+        feedPosts.push({
+          _id: p._id,
+          image: p.image,
+          caption: p.caption,
+          createdAt: p.createdAt,
 
-  likes: p.likes || 0,
-  comments: p.comments || [],
-  isLiked: p.likedBy?.some(
-    (id) => id.toString() === currentUserId
-  ),
+          likes: p.likes || 0,
+          comments: p.comments || [],
+          isLiked: p.likedBy?.some((id) => id.toString() === currentUserId),
 
-  userId: {
-    username: u.username,
-    img: u.img,
-  },
-});
-
+          userId: {
+            username: u.username,
+            img: u.img,
+          },
+        });
       });
     });
 
     // 6. Sort latest first
-    feedPosts.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    feedPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.json({
       success: true,
@@ -706,10 +689,7 @@ const getimage = async (req, res) => {
     const email = req.user.email;
 
     // Find logged-in user
-    const user = await userModel.findOne(
-      {email:email},
-      { img: 1, _id: 0 }
-    );
+    const user = await userModel.findOne({ email: email }, { img: 1, _id: 0 });
 
     if (!user) {
       return res.json({
@@ -722,7 +702,6 @@ const getimage = async (req, res) => {
       success: true,
       image: user.img,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -731,7 +710,6 @@ const getimage = async (req, res) => {
   }
 };
 
-
 /* ---------------- LIKE / UNLIKE POST ---------------- */
 const likePost = async (req, res) => {
   try {
@@ -739,12 +717,16 @@ const likePost = async (req, res) => {
     const { postId } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(postId)) {
-      return res.status(400).json({ success: false, message: "Invalid post ID" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid post ID" });
     }
 
     const user = await userModel.findOne({ "post._id": postId });
     if (!user) {
-      return res.status(404).json({ success: false, message: "Post not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
     }
 
     const post = user.post.id(postId);
@@ -754,13 +736,13 @@ const likePost = async (req, res) => {
     post.likes = post.likes || 0;
 
     const alreadyLiked = post.likedBy.some(
-      (id) => id.toString() === userId.toString()
+      (id) => id.toString() === userId.toString(),
     );
 
     if (alreadyLiked) {
       // Unlike
       post.likedBy = post.likedBy.filter(
-        (id) => id.toString() !== userId.toString()
+        (id) => id.toString() !== userId.toString(),
       );
       post.likes = Math.max(0, post.likes - 1);
     } else {
@@ -776,7 +758,6 @@ const likePost = async (req, res) => {
       likes: post.likes,
       isLiked: !alreadyLiked,
     });
-
   } catch (err) {
     console.error("Like Error:", err);
     return res.status(500).json({
@@ -798,8 +779,9 @@ const addComment = async (req, res) => {
       });
     }
 
-    // Find post owner
+    // ✅ Find post owner
     const postOwner = await userModel.findOne({ "post._id": postId });
+
     if (!postOwner) {
       return res.status(404).json({
         success: false,
@@ -809,10 +791,8 @@ const addComment = async (req, res) => {
 
     const post = postOwner.post.id(postId);
 
-    // Get logged-in user's username
-    const currentUser = await userModel
-      .findById(userId)
-      .select("username");
+    // ✅ Get logged-in user info
+    const currentUser = await userModel.findById(userId).select("username");
 
     if (!currentUser) {
       return res.status(404).json({
@@ -820,6 +800,56 @@ const addComment = async (req, res) => {
         message: "User not found",
       });
     }
+
+    // ==================================================
+    // ✅ COMMENT PERMISSION CHECK
+    // ==================================================
+
+    const permission = postOwner.commentsPermission;
+
+    // ❌ If Off
+    if (permission === "off") {
+      return res.status(403).json({
+        success: false,
+        message: "Comments are turned off ❌",
+      });
+    }
+
+    // ✅ Followers / Connections only
+    if (permission === "followers") {
+      const isConnected = postOwner.connected.some(
+        (u) => u.username === currentUser.username
+      );
+
+      if (!isConnected) {
+        return res.status(403).json({
+          success: false,
+          message: "Only your connections can comment ❌",
+        });
+      }
+    }
+
+    // ✅ Followback only
+    if (permission === "followback") {
+      const isFollower = postOwner.connected.some(
+        (u) => u.username === currentUser.username
+      );
+
+      const isFollowingBack = postOwner.connecting.some(
+        (u) => u.username === currentUser.username
+      );
+
+      if (!(isFollower && isFollowingBack)) {
+        return res.status(403).json({
+          success: false,
+          message: "Only follow-back connections can comment ❌",
+        });
+      }
+    }
+
+    // ==================================================
+    // ✅ Allowed → Add Comment
+    // ==================================================
 
     const newComment = {
       userId,
@@ -834,9 +864,8 @@ const addComment = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      comment: newComment, // return only new comment
+      comment: newComment,
     });
-
   } catch (err) {
     console.error("Comment Error:", err);
     return res.status(500).json({
@@ -845,7 +874,6 @@ const addComment = async (req, res) => {
     });
   }
 };
-
 
 const notes = async (req, res) => {
   try {
@@ -858,10 +886,12 @@ const notes = async (req, res) => {
     const connectedUsernames = me.connected.map((c) => c.username);
 
     // Fetch connected users who have notes
-    const connectedNotes = await userModel.find({
-      username: { $in: connectedUsernames },
-      note: { $ne: "" }, // only users who wrote a note
-    }).select("username img note noteCreatedAt");
+    const connectedNotes = await userModel
+      .find({
+        username: { $in: connectedUsernames },
+        note: { $ne: "" }, // only users who wrote a note
+      })
+      .select("username img note noteCreatedAt");
 
     res.json({
       success: true,
@@ -881,9 +911,7 @@ const notes = async (req, res) => {
   }
 };
 
-
-
-const note=async (req, res) => {
+const note = async (req, res) => {
   try {
     const { note } = req.body;
     const email = req.user.email;
@@ -895,14 +923,14 @@ const note=async (req, res) => {
           note: note,
           noteCreatedAt: new Date(),
         },
-      } 
+      },
     );
 
     res.json({ success: true, message: "Note updated" });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
-}
+};
 
 const deletedimg = async (req, res) => {
   try {
@@ -910,7 +938,7 @@ const deletedimg = async (req, res) => {
 
     const result = await userModel.updateOne(
       { email: email },
-      { $set: { img: "" } }
+      { $set: { img: "" } },
     );
 
     if (result.modifiedCount > 0) {
@@ -932,9 +960,6 @@ const deletedimg = async (req, res) => {
     });
   }
 };
-
-  
-
 
 const updatePost = async (req, res) => {
   try {
@@ -972,7 +997,6 @@ const updatePost = async (req, res) => {
       message: "Post updated successfully",
       post,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -981,9 +1005,6 @@ const updatePost = async (req, res) => {
     });
   }
 };
-
-
-
 
 const deletePost = async (req, res) => {
   try {
@@ -1017,7 +1038,6 @@ const deletePost = async (req, res) => {
       success: true,
       message: "Post deleted successfully",
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -1026,8 +1046,6 @@ const deletePost = async (req, res) => {
     });
   }
 };
-
-
 
 const sendPostToChats = async (req, res) => {
   try {
@@ -1043,12 +1061,180 @@ const sendPostToChats = async (req, res) => {
       });
     }
 
-
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false });
   }
 };
+
+const updateGender = async (req, res) => {
+  try {
+    const { gender } = req.body;
+    const email = req.user.email;
+
+    console.log("Gender:", gender);
+    console.log("User Email:", email);
+
+    const users = await userModel.updateOne(
+      { email: email },
+      { $set: { gender: gender } },
+      { upsert: true },
+    );
+
+    console.log(users);
+
+    if (users) {
+      res.status(200).json({
+        success: true,
+        message: "Gender updated successfully ✅",
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Problem while updating gender ❌",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Server error ❌",
+    });
+  }
+};
+
+const updateBio = async (req, res) => {
+  try {
+    const { bio } = req.body;
+    const email = req.user.email;
+
+    const user = await userModel.updateOne({ email }, { $set: { bio } });
+
+    res.status(200).json({
+      success: true,
+      message: "Bio updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating bio",
+    });
+  }
+};
+
+const updateNotifications = async (req, res) => {
+  try {
+    const { enabled, duration } = req.body;
+    const email = req.user.email;
+
+    await userModel.updateOne(
+      { email },
+      {
+        $set: {
+          "notifications.enabled": enabled,
+          "notifications.duration": duration,
+        },
+      },
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Notification settings updated ✅",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating notifications ❌",
+    });
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+const email = req.user.email;
+
+
+    const user = await userModel.findOne({ email: req.user.email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.log("Change Password Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+const updateCommentPermission = async (req, res) => {
+  try {
+    const { permission } = req.body;
+
+    // ✅ Get logged in user id
+    const userId = req.user.id;
+
+    await userModel.findByIdAndUpdate(
+      userId,
+      { commentsPermission: permission },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Comment permission updated ✅",
+    });
+  } catch (err) {
+    console.log("Update Error:", err);
+    res.status(500).json({ success: false });
+  }
+};
+
+
+
+const getUserSettings = async (req, res) => {
+  try {
+    // ✅ Logged in user id
+    const userId = req.user.id;
+
+    const user = await userModel
+      .findById(userId)
+      .select("commentsPermission");
+
+    res.status(200).json({
+      success: true,
+      commentsPermission: user.commentsPermission,
+    });
+  } catch (err) {
+    console.log("Fetch Error:", err);
+    res.status(500).json({ success: false });
+  }
+};
+
 
 
 
@@ -1057,7 +1243,7 @@ export {
   sendotp,
   verifyotp,
   signup,
-  login, 
+  login,
   resetpassword,
   addSampleNotifications,
   deleteNotification,
@@ -1080,12 +1266,15 @@ export {
   likePost,
   notes,
   note,
-
   updatePost,
   deletePost,
   deletedimg,
   sendPostToChats,
-
-
-
+  updateGender,
+  updateBio,
+  updateNotifications,
+  changePassword,
+  updateCommentPermission,
+  getUserSettings
+  
 };
