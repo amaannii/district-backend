@@ -663,22 +663,24 @@ const getFeedPosts = async (req, res) => {
 
     connectedUsers.forEach((u) => {
       u.post.forEach((p) => {
-        feedPosts.push({
-          _id: p._id,
-          image: p.image,
-          caption: p.caption,
-          createdAt: p.createdAt,
+      feedPosts.push({
+  _id: p._id,
+  image: p.image,
+  caption: p.caption,
+  createdAt: p.createdAt,
 
-          // ✅ ADD THESE
-          likes: p.likes || 0,
-          comments: p.comments || [],
-          isLiked: p.likedBy?.includes(currentUserId),
+  likes: p.likes || 0,
+  comments: p.comments || [],
+  isLiked: p.likedBy?.some(
+    (id) => id.toString() === currentUserId
+  ),
 
-          userId: {
-            username: u.username,
-            img: u.img,
-          },
-        });
+  userId: {
+    username: u.username,
+    img: u.img,
+  },
+});
+
       });
     });
 
@@ -731,65 +733,116 @@ const getimage = async (req, res) => {
 
 
 /* ---------------- LIKE / UNLIKE POST ---------------- */
- const likePost = async (req, res) => {
+const likePost = async (req, res) => {
   try {
-    const userId = req.user.id; // from auth middleware
+    const userId = req.user.id;
     const { postId } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ success: false, message: "Invalid post ID" });
+    }
+
     const user = await userModel.findOne({ "post._id": postId });
-    if (!user) return res.status(404).json({ success: false });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Post not found" });
+    }
 
     const post = user.post.id(postId);
 
-    const alreadyLiked = post.likedBy.includes(userId);
+    // Ensure arrays exist
+    post.likedBy = post.likedBy || [];
+    post.likes = post.likes || 0;
+
+    const alreadyLiked = post.likedBy.some(
+      (id) => id.toString() === userId.toString()
+    );
 
     if (alreadyLiked) {
-      post.likes -= 1;
-      post.likedBy.pull(userId);
+      // Unlike
+      post.likedBy = post.likedBy.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+      post.likes = Math.max(0, post.likes - 1);
     } else {
+      // Like
+      post.likedBy.push(new mongoose.Types.ObjectId(userId));
       post.likes += 1;
-      post.likedBy.push(userId);
     }
 
     await user.save();
 
-    res.json({
+    return res.status(200).json({
       success: true,
       likes: post.likes,
       isLiked: !alreadyLiked,
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Like Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
-/* ---------------- ADD COMMENT ---------------- */
- const addComment = async (req, res) => {
+const addComment = async (req, res) => {
   try {
     const userId = req.user.id;
     const { postId, text } = req.body;
 
-    const user = await userModel.findOne({ "post._id": postId });
-    if (!user) return res.status(404).json({ success: false });
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment cannot be empty",
+      });
+    }
 
-    const post = user.post.id(postId);
+    // Find post owner
+    const postOwner = await userModel.findOne({ "post._id": postId });
+    if (!postOwner) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
 
-    const commenter = await userModel.findById(userId).select("username");
+    const post = postOwner.post.id(postId);
 
-    post.comments.push({
+    // Get logged-in user's username
+    const currentUser = await userModel
+      .findById(userId)
+      .select("username");
+
+    if (!currentUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const newComment = {
       userId,
-      username: commenter.username,
-      text,
-    });
+      username: currentUser.username,
+      text: text.trim(),
+      createdAt: new Date(),
+    };
 
-    await user.save();
+    post.comments.push(newComment);
 
-    res.json({
+    await postOwner.save();
+
+    return res.status(200).json({
       success: true,
-      comments: post.comments,
+      comment: newComment, // return only new comment
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Comment Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -976,12 +1029,35 @@ const deletePost = async (req, res) => {
 
 
 
+const sendPostToChats = async (req, res) => {
+  try {
+    const { chatIds, postId } = req.body;
+    const senderId = req.user.id;
+
+    for (let chatId of chatIds) {
+      await Messages.create({
+        chatId,
+        senderId,
+        type: "post",
+        content: postId,
+      });
+    }
+
+
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false });
+  }
+};
+
+
+
 
 export {
   sendotp,
   verifyotp,
   signup,
-  login,
+  login, 
   resetpassword,
   addSampleNotifications,
   deleteNotification,
@@ -1007,7 +1083,9 @@ export {
 
   updatePost,
   deletePost,
-  deletedimg
+  deletedimg,
+  sendPostToChats,
+
 
 
 };

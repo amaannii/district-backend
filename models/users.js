@@ -53,18 +53,31 @@ const userSchema = new mongoose.Schema(
     likes: { type: Number, default: 0 },
     likedBy: { type: [mongoose.Schema.Types.ObjectId], default: [] },
 
-    comments: {
-      type: [
-        {
-          userId: { type: mongoose.Schema.Types.ObjectId, required: true },
-          username: { type: String, required: true },
-          text: { type: String, required: true },
-          createdAt: { type: Date, default: Date.now },
-        },
-      ],
-      default: [],
+    comments: [
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    username: {
+      type: String,
+      required: true,
+    },
+    text: {
+      type: String,
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
     },
   },
+],
+
+      default: [],
+    },
+
 ],
 
 //     createdAt: {
