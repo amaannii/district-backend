@@ -5,6 +5,7 @@ import {
   addComment,
   addSampleNotifications,
   allusers,
+  changePassword,
   // cancelRequest,
   completeProfile,
   confirmnotification,
@@ -18,6 +19,7 @@ import {
   explorePosts,
   getFeedPosts,
   getimage,
+  getUserSettings,
   googlelogin,
   likePost,
   login,
@@ -31,6 +33,10 @@ import {
   sendotp,
   sendPostToChats,
   signup,
+  updateBio,
+  updateCommentPermission,
+  updateGender,
+  updateNotifications,
   // unconnect,
   updatePost,
   upload,
@@ -75,13 +81,17 @@ userrouter.delete("/delete-comment", authMiddleware,deleteComment);
 
 userrouter.put("/update-post/:postId", authMiddleware,updatePost);
 userrouter.delete("/delete-post/:postId", authMiddleware,deletePost);
-
 userrouter.post("/deleted", authMiddleware,deletedimg);
 // userrouter.post("/cancel-request", authMiddleware,cancelRequest);
 // userrouter.post("/unconnect", authMiddleware,unconnect);
 // userrouter.get("/connection-status/:username", authMiddleware,connectionStatus);
-userrouter.post(
-  "/send-post-to-chats",authMiddleware,sendPostToChats);
+userrouter.post("/send-post-to-chats",authMiddleware,sendPostToChats);
+userrouter.post("/updateGender", authMiddleware, updateGender);
+userrouter.post("/updateBio", authMiddleware, updateBio);
+userrouter.post("/updateNotifications", authMiddleware, updateNotifications);
+userrouter.post("/changePassword", authMiddleware, changePassword);
+userrouter.post( "/updateCommentPermission",authMiddleware,updateCommentPermission);
+userrouter.post( "/getUserSettings", authMiddleware, getUserSettings);
 
 
 
