@@ -3,6 +3,7 @@ import express from "express";
 import {
 
   addComment,
+  addContactNumber,
   addSampleNotifications,
   allusers,
   changePassword,
@@ -11,12 +12,14 @@ import {
   confirmnotification,
   confirmNotification,
   deleteComment,
+  deleteContact,
   // connectionStatus,
   deletedimg,
   deleteNotification,
   deleteotp,
   deletePost,
   explorePosts,
+  getContacts,
   getFeedPosts,
   getimage,
   getUserSettings,
@@ -34,7 +37,9 @@ import {
   sendPostToChats,
   signup,
   updateBio,
+  updateBirthday,
   updateCommentPermission,
+  updateContact,
   updateGender,
   updateNotifications,
   // unconnect,
@@ -78,7 +83,6 @@ userrouter.post("/add-comment", authMiddleware, addComment);
 userrouter.get("/notes", authMiddleware,notes)
 userrouter.post("/note", authMiddleware,note)
 userrouter.delete("/delete-comment", authMiddleware,deleteComment);
-
 userrouter.put("/update-post/:postId", authMiddleware,updatePost);
 userrouter.delete("/delete-post/:postId", authMiddleware,deletePost);
 userrouter.post("/deleted", authMiddleware,deletedimg);
@@ -92,6 +96,11 @@ userrouter.post("/updateNotifications", authMiddleware, updateNotifications);
 userrouter.post("/changePassword", authMiddleware, changePassword);
 userrouter.post( "/updateCommentPermission",authMiddleware,updateCommentPermission);
 userrouter.post( "/getUserSettings", authMiddleware, getUserSettings);
+userrouter.post( "/addContact", authMiddleware, addContactNumber);
+userrouter.get( "/getContacts", authMiddleware, getContacts);
+userrouter.post( "/deleteContact", authMiddleware, deleteContact);
+userrouter.post( "/updateContact", authMiddleware,updateContact);
+userrouter.post( "/updateBirthday", authMiddleware, updateBirthday);
 
 
 
