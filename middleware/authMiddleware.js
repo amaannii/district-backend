@@ -19,6 +19,7 @@ const authMiddleware = (req, res, next) => {
 
     // 3. Store user data in request (VERY IMPORTANT)
     req.user = {
+        id: decoded.id,    
       email: decoded.email,
       role: decoded.role,
     };
