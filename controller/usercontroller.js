@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import otpModel from "../models/otp.js";
 import jwt from "jsonwebtoken";
 import ActivityLog from "../models/ActivityLog.js";
+import mongoose  from "mongoose";
 
 dotenv.config();
 
@@ -616,10 +617,13 @@ const notificationdelete = async (req, res) => {
     res.json({ success: false });
   }
 };
-const getFeedPosts = async (req, res) => {
+
+// ✅ GET FEED POSTS
+ const getFeedPosts = async (req, res) => {
   try {
     const email = req.user.email;
     const currentUserId = req.user.id;
+
 
     // 1. Find logged-in user
     const user = await userModel.findOne(
@@ -637,18 +641,16 @@ const getFeedPosts = async (req, res) => {
     // 2. Connected usernames
     const connectedUsernames = user.connecting.map((u) => u.username);
 
-    // 3. Include own posts
-    connectedUsernames.push(user.username);
 
-    // 4. Fetch connected users with posts
+    const connectedUsernames = user.connecting.map((u) => u.username);
+    connectedUsernames.push(user.username); // include own posts
+
     const connectedUsers = await userModel.find(
       { username: { $in: connectedUsernames } },
       { username: 1, img: 1, post: 1 },
     );
 
-    // 5. Flatten posts
     let feedPosts = [];
-
     connectedUsers.forEach((u) => {
       u.post.forEach((p) => {
         feedPosts.push({
@@ -656,6 +658,7 @@ const getFeedPosts = async (req, res) => {
           image: p.image,
           caption: p.caption,
           createdAt: p.createdAt,
+
 
           likes: p.likes || 0,
           comments: p.comments || [],
@@ -670,17 +673,13 @@ const getFeedPosts = async (req, res) => {
     });
 
     // 6. Sort latest first
+
     feedPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    res.json({
-      success: true,
-      posts: feedPosts,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.json({ success: true, posts: feedPosts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -711,59 +710,43 @@ const getimage = async (req, res) => {
 };
 
 /* ---------------- LIKE / UNLIKE POST ---------------- */
+// ✅ LIKE POST
 const likePost = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.id;  // now we have user ID
     const { postId } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(postId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid post ID" });
-    }
 
     const user = await userModel.findOne({ "post._id": postId });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Post not found" });
-    }
+    if (!user) return res.status(404).json({ success: false, message: "Post not found" });
+
 
     const post = user.post.id(postId);
-
-    // Ensure arrays exist
     post.likedBy = post.likedBy || [];
     post.likes = post.likes || 0;
 
-    const alreadyLiked = post.likedBy.some(
-      (id) => id.toString() === userId.toString(),
-    );
+
+    const alreadyLiked = post.likedBy.some(id => id.toString() === userId);
 
     if (alreadyLiked) {
-      // Unlike
-      post.likedBy = post.likedBy.filter(
-        (id) => id.toString() !== userId.toString(),
-      );
+      post.likedBy = post.likedBy.filter(id => id.toString() !== userId);
+
       post.likes = Math.max(0, post.likes - 1);
     } else {
-      // Like
-      post.likedBy.push(new mongoose.Types.ObjectId(userId));
+      post.likedBy.push(userId);
       post.likes += 1;
     }
 
     await user.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       likes: post.likes,
       isLiked: !alreadyLiked,
     });
   } catch (err) {
-    console.error("Like Error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -771,35 +754,16 @@ const addComment = async (req, res) => {
   try {
     const userId = req.user.id;
     const { postId, text } = req.body;
+    if (!text.trim()) return res.status(400).json({ success: false, message: "Comment empty" });
 
-    if (!text || !text.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Comment cannot be empty",
-      });
-    }
 
-    // ✅ Find post owner
     const postOwner = await userModel.findOne({ "post._id": postId });
-
-    if (!postOwner) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
-      });
-    }
+    if (!postOwner) return res.status(404).json({ success: false, message: "Post not found" });
 
     const post = postOwner.post.id(postId);
 
-    // ✅ Get logged-in user info
-    const currentUser = await userModel.findById(userId).select("username");
+    const currentUser = await userModel.findById(userId).select("username img");
 
-    if (!currentUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
 
     // ==================================================
     // ✅ COMMENT PERMISSION CHECK
@@ -852,26 +816,24 @@ const addComment = async (req, res) => {
     // ==================================================
 
     const newComment = {
-      userId,
+      userId: currentUser._id,
       username: currentUser.username,
+      img: currentUser.img,
       text: text.trim(),
       createdAt: new Date(),
     };
 
+    post.comments = post.comments || [];
     post.comments.push(newComment);
 
     await postOwner.save();
 
-    return res.status(200).json({
-      success: true,
-      comment: newComment,
-    });
+
+    res.json({ success: true, comment: newComment });
+
   } catch (err) {
-    console.error("Comment Error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -1047,7 +1009,11 @@ const deletePost = async (req, res) => {
   }
 };
 
-const sendPostToChats = async (req, res) => {
+
+
+
+ const sendPostToChats = async (req, res) => {
+
   try {
     const { chatIds, postId } = req.body;
     const senderId = req.user.id;
@@ -1063,7 +1029,8 @@ const sendPostToChats = async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.json({ success: false });
+    console.error(err);
+    res.status(500).json({ success: false });
   }
 };
 
@@ -1238,6 +1205,51 @@ const getUserSettings = async (req, res) => {
 
 
 
+// DELETE COMMENT
+const deleteComment = async (req, res) => {
+  try {
+    const userId = req.user.id; // logged-in user
+    const { postId, commentId } = req.body;
+
+    const postOwner = await userModel.findOne({ "post._id": postId });
+    if (!postOwner)
+      return res.status(404).json({ success: false, message: "Post not found" });
+
+    const post = postOwner.post.id(postId);
+    if (!post)
+      return res.status(404).json({ success: false, message: "Post not found" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment)
+      return res.status(404).json({ success: false, message: "Comment not found" });
+
+    // ✅ Allow delete only if comment owner
+    if (comment.userId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can delete only your comment",
+      });
+    }
+
+    comment.deleteOne();
+    await postOwner.save();
+
+    res.json({
+      success: true,
+      message: "Comment deleted",
+      commentId,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+
+
+
 
 export {
   sendotp,
@@ -1270,11 +1282,15 @@ export {
   deletePost,
   deletedimg,
   sendPostToChats,
+
   updateGender,
   updateBio,
   updateNotifications,
   changePassword,
   updateCommentPermission,
   getUserSettings
-  
+
+  deleteComment,
+
+
 };
