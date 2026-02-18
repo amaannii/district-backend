@@ -79,13 +79,6 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
-    //     createdAt: {
-    //       type: Date,
-    //       default: Date.now,
-    //     },
-    //   },
-    // ],
-
     request: [
       {
         username: String,
@@ -127,12 +120,15 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
-   commentsPermission: {
-  type: String,
-  enum: ["followers", "followback", "off"],
-  default: "followers",
-},
-
+    commentsPermission: {
+      type: String,
+      enum: ["followers", "followback", "off"],
+      default: "followers",
+    },
+    contacts: {
+      type: String,
+      default: [],
+    },
 
     notifications: {
       enabled: {
@@ -144,6 +140,11 @@ const userSchema = new mongoose.Schema(
         default: "for 2 days",
       },
     },
+      birthday: {
+    month: { type: String },
+    day: { type: String },
+    year: { type: String },
+  },
 
     noteCreatedAt: {
       type: Date,

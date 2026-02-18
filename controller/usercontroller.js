@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 import otpModel from "../models/otp.js";
 import jwt from "jsonwebtoken";
 import ActivityLog from "../models/ActivityLog.js";
-import mongoose  from "mongoose";
+import mongoose from "mongoose";
 
 dotenv.config();
 
@@ -619,11 +619,10 @@ const notificationdelete = async (req, res) => {
 };
 
 // ✅ GET FEED POSTS
- const getFeedPosts = async (req, res) => {
+const getFeedPosts = async (req, res) => {
   try {
     const email = req.user.email;
     const currentUserId = req.user.id;
-
 
     // 1. Find logged-in user
     const user = await userModel.findOne(
@@ -637,10 +636,6 @@ const notificationdelete = async (req, res) => {
         message: "User not found",
       });
     }
-
-    // 2. Connected usernames
-    const connectedUsernames = user.connecting.map((u) => u.username);
-
 
     const connectedUsernames = user.connecting.map((u) => u.username);
     connectedUsernames.push(user.username); // include own posts
@@ -658,7 +653,6 @@ const notificationdelete = async (req, res) => {
           image: p.image,
           caption: p.caption,
           createdAt: p.createdAt,
-
 
           likes: p.likes || 0,
           comments: p.comments || [],
@@ -713,23 +707,23 @@ const getimage = async (req, res) => {
 // ✅ LIKE POST
 const likePost = async (req, res) => {
   try {
-    const userId = req.user.id;  // now we have user ID
+    const userId = req.user.id; // now we have user ID
     const { postId } = req.body;
 
-
     const user = await userModel.findOne({ "post._id": postId });
-    if (!user) return res.status(404).json({ success: false, message: "Post not found" });
-
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
 
     const post = user.post.id(postId);
     post.likedBy = post.likedBy || [];
     post.likes = post.likes || 0;
 
-
-    const alreadyLiked = post.likedBy.some(id => id.toString() === userId);
+    const alreadyLiked = post.likedBy.some((id) => id.toString() === userId);
 
     if (alreadyLiked) {
-      post.likedBy = post.likedBy.filter(id => id.toString() !== userId);
+      post.likedBy = post.likedBy.filter((id) => id.toString() !== userId);
 
       post.likes = Math.max(0, post.likes - 1);
     } else {
@@ -754,16 +748,18 @@ const addComment = async (req, res) => {
   try {
     const userId = req.user.id;
     const { postId, text } = req.body;
-    if (!text.trim()) return res.status(400).json({ success: false, message: "Comment empty" });
-
+    if (!text.trim())
+      return res.status(400).json({ success: false, message: "Comment empty" });
 
     const postOwner = await userModel.findOne({ "post._id": postId });
-    if (!postOwner) return res.status(404).json({ success: false, message: "Post not found" });
+    if (!postOwner)
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
 
     const post = postOwner.post.id(postId);
 
     const currentUser = await userModel.findById(userId).select("username img");
-
 
     // ==================================================
     // ✅ COMMENT PERMISSION CHECK
@@ -782,7 +778,7 @@ const addComment = async (req, res) => {
     // ✅ Followers / Connections only
     if (permission === "followers") {
       const isConnected = postOwner.connected.some(
-        (u) => u.username === currentUser.username
+        (u) => u.username === currentUser.username,
       );
 
       if (!isConnected) {
@@ -796,11 +792,11 @@ const addComment = async (req, res) => {
     // ✅ Followback only
     if (permission === "followback") {
       const isFollower = postOwner.connected.some(
-        (u) => u.username === currentUser.username
+        (u) => u.username === currentUser.username,
       );
 
       const isFollowingBack = postOwner.connecting.some(
-        (u) => u.username === currentUser.username
+        (u) => u.username === currentUser.username,
       );
 
       if (!(isFollower && isFollowingBack)) {
@@ -828,9 +824,7 @@ const addComment = async (req, res) => {
 
     await postOwner.save();
 
-
     res.json({ success: true, comment: newComment });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
@@ -1009,11 +1003,7 @@ const deletePost = async (req, res) => {
   }
 };
 
-
-
-
- const sendPostToChats = async (req, res) => {
-
+const sendPostToChats = async (req, res) => {
   try {
     const { chatIds, postId } = req.body;
     const senderId = req.user.id;
@@ -1119,8 +1109,7 @@ const updateNotifications = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-const email = req.user.email;
-
+    const email = req.user.email;
 
     const user = await userModel.findOne({ email: req.user.email });
 
@@ -1168,7 +1157,7 @@ const updateCommentPermission = async (req, res) => {
     await userModel.findByIdAndUpdate(
       userId,
       { commentsPermission: permission },
-      { new: true }
+      { new: true },
     );
 
     res.status(200).json({
@@ -1181,16 +1170,12 @@ const updateCommentPermission = async (req, res) => {
   }
 };
 
-
-
 const getUserSettings = async (req, res) => {
   try {
     // ✅ Logged in user id
     const userId = req.user.id;
 
-    const user = await userModel
-      .findById(userId)
-      .select("commentsPermission");
+    const user = await userModel.findById(userId).select("commentsPermission");
 
     res.status(200).json({
       success: true,
@@ -1202,9 +1187,6 @@ const getUserSettings = async (req, res) => {
   }
 };
 
-
-
-
 // DELETE COMMENT
 const deleteComment = async (req, res) => {
   try {
@@ -1213,15 +1195,21 @@ const deleteComment = async (req, res) => {
 
     const postOwner = await userModel.findOne({ "post._id": postId });
     if (!postOwner)
-      return res.status(404).json({ success: false, message: "Post not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
 
     const post = postOwner.post.id(postId);
     if (!post)
-      return res.status(404).json({ success: false, message: "Post not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
 
     const comment = post.comments.id(commentId);
     if (!comment)
-      return res.status(404).json({ success: false, message: "Comment not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Comment not found" });
 
     // ✅ Allow delete only if comment owner
     if (comment.userId.toString() !== userId) {
@@ -1239,14 +1227,133 @@ const deleteComment = async (req, res) => {
       message: "Comment deleted",
       commentId,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
+const addContactNumber = async (req, res) => {
+  try {
+    const userId = req.user.id; // from token middleware
+    const { number } = req.body;
 
+    if (!number) {
+      return res.status(400).json({ message: "Number is required" });
+    }
+
+    // ✅ Must be exactly 10 digits
+    if (!/^[0-9]{10}$/.test(number)) {
+      return res.status(400).json({
+        message: "Contact number must be exactly 10 digits",
+      });
+    }
+
+    const user = await userModel.findById(userId);
+
+    // ✅ Max 10 contacts allowed
+
+    // ✅ Prevent duplicate numbers
+
+    // ✅ Save number
+    user.contacts=number;
+    await user.save();
+
+    res.json({
+      message: "Contact number added successfully",
+      contacts: user.contacts,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getContacts = async (req, res) => {
+  try {
+    const email = req.user.email;
+    console.log(email);
+    
+
+    const user = await userModel.findOne({email});
+    console.log(user);
+    
+
+    res.json({
+      contacts: user.contacts,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+const deleteContact = async (req, res) => {
+  try {
+    const { number } = req.body;
+
+    const user = await userModel.findById(req.user.id);
+
+    user.contacts = user.contacts.filter((n) => n !== number);
+
+    await user.save();
+
+    res.json({ contacts: user.contacts });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const updateContact = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const { newNumber } = req.body;
+
+    const user = await userModel.updateOne(
+      { email: email }, // find user by email
+      { $set: { contacts: newNumber } } // update contact field
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Contact number updated successfully ✅",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong ❌",
+    });
+  }
+};
+
+const updateBirthday = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const { month, day, year } = req.body;
+
+    const user = await userModel.findOneAndUpdate(
+      { email },
+      {
+        birthday: { month, day, year },
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Birthday updated successfully ✅",
+      birthday: user.birthday,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Error updating birthday ❌",
+    });
+  }
+};
 
 
 
@@ -1282,15 +1389,18 @@ export {
   deletePost,
   deletedimg,
   sendPostToChats,
-
   updateGender,
   updateBio,
   updateNotifications,
   changePassword,
   updateCommentPermission,
-  getUserSettings
-
+  getUserSettings,
   deleteComment,
+  addContactNumber,
+  getContacts,
+  deleteContact,
+  updateContact,
+  updateBirthday
 
 
 };
