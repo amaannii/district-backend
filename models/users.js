@@ -123,10 +123,10 @@ const userSchema = new mongoose.Schema(
     commentsPermission: {
       type: String,
       enum: ["followers", "followback", "off"],
-      default: "followers",
+      default: "all",
     },
     contacts: {
-      type: String,
+      type: [String],
       default: [],
     },
 
