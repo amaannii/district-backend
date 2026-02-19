@@ -36,6 +36,7 @@ import {
   sendotp,
   sendPostToChats,
   signup,
+  testNotification,
   updateBio,
   updateBirthday,
   updateCommentPermission,
@@ -101,6 +102,7 @@ userrouter.get( "/getContacts", authMiddleware, getContacts);
 userrouter.post( "/deleteContact", authMiddleware, deleteContact);
 userrouter.post( "/updateContact", authMiddleware,updateContact);
 userrouter.post( "/updateBirthday", authMiddleware, updateBirthday);
+userrouter.post( "/testNotification", authMiddleware, testNotification);
 
 
 

@@ -1355,6 +1355,19 @@ const updateBirthday = async (req, res) => {
   }
 };
 
+const testNotification =async (req, res) => {
+  const { token } = req.body;
+
+  await admin.messaging().send({
+    token,
+    notification: {
+      title: "Hello Amani 🔥",
+      body: "Notification working now!",
+    },
+  });
+
+  res.json({ success: true });
+}
 
 
 
@@ -1400,7 +1413,8 @@ export {
   getContacts,
   deleteContact,
   updateContact,
-  updateBirthday
+  updateBirthday,
+  testNotification
 
 
 };
