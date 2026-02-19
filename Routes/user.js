@@ -22,6 +22,7 @@ import {
   getContacts,
   getFeedPosts,
   getimage,
+  getSavedPosts,
   getUserSettings,
   googlelogin,
   likePost,
@@ -33,6 +34,7 @@ import {
   posting,
   request,
   resetpassword,
+  savePost,
   sendotp,
   sendPostToChats,
   signup,
@@ -103,6 +105,8 @@ userrouter.post( "/deleteContact", authMiddleware, deleteContact);
 userrouter.post( "/updateContact", authMiddleware,updateContact);
 userrouter.post( "/updateBirthday", authMiddleware, updateBirthday);
 userrouter.post( "/testNotification", authMiddleware, testNotification);
+userrouter.post( "/save-post", authMiddleware, savePost);
+userrouter.get( "/saved-posts", authMiddleware,getSavedPosts);
 
 
 

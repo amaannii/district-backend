@@ -74,6 +74,21 @@ const userSchema = new mongoose.Schema(
             },
           },
         ],
+        
+savedPosts: [
+  {
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post", // VERY IMPORTANT
+    },
+    savedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
+
+
 
         default: [],
       },
