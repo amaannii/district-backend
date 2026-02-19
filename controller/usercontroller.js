@@ -1261,6 +1261,21 @@ const updateBirthday = async (req, res) => {
   }
 };
 
+
+const testNotification =async (req, res) => {
+  const { token } = req.body;
+
+  await admin.messaging().send({
+    token,
+    notification: {
+      title: "Hello Amani 🔥",
+      body: "Notification working now!",
+    },
+  });
+
+  res.json({ success: true });
+}
+
 // const getMyPosts = async (req, res) => {
 //   try {
 //     const userId = req.user.id;
@@ -1310,6 +1325,7 @@ const updateBirthday = async (req, res) => {
 
 
 
+
 export {
   sendotp,
   verifyotp,
@@ -1352,7 +1368,8 @@ export {
   getContacts,
   deleteContact,
   updateContact,
-  updateBirthday
+  updateBirthday,
+  testNotification
 
 
 };
