@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+// import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import userModel from "../models/users.js";
 import bcrypt from "bcrypt";
@@ -6,6 +6,7 @@ import otpModel from "../models/otp.js";
 import jwt from "jsonwebtoken";
 import ActivityLog from "../models/ActivityLog.js";
 import mongoose from "mongoose";
+
 
 dotenv.config();
 
@@ -1033,44 +1034,93 @@ const updateNotifications = async (req, res) => {
 
 const changePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, otp } = req.body;
     const email = req.user.email;
 
-    const user = await userModel.findOne({ email: req.user.email });
-
-    if (!user) {
-      return res.status(404).json({
+    // OTP Check
+    if (otpStore[email] != otp) {
+      return res.status(400).json({
         success: false,
-        message: "User not found",
+        message: "Invalid OTP Code",
       });
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    // Remove OTP after success
+    delete otpStore[email];
+
+    const user = await userModel.findOne({ email });
+
+    const isMatch = bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: "Current password is incorrect",
+        message: "Current password incorrect",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Password updated successfully",
+      message: "Password changed successfully",
     });
   } catch (error) {
-    console.log("Change Password Error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
     });
   }
 };
+import nodemailer from "nodemailer";
+
+
+
+const sendPasswordOtp = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // Store OTP temporarily
+    otpStore[email] = otp;
+
+    // Email transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Mail options
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Change Verification Code",
+      text: `Your OTP code is: ${otp}`,
+    };
+
+    // Send Email
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent to your email",
+    });
+  } catch (error) {
+    console.log("OTP Send Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send OTP",
+    });
+  }
+};
+
+
 
 const updateCommentPermission = async (req, res) => {
   try {
@@ -1265,16 +1315,32 @@ const updateBirthday = async (req, res) => {
 const testNotification =async (req, res) => {
   const { token } = req.body;
 
-  await admin.messaging().send({
-    token,
-    notification: {
-      title: "Hello Amani 🔥",
-      body: "Notification working now!",
+await admin.messaging().send({
+  token,
+  notification: {
+    title: "Hello Amani 🔥",
+    body: "Notification working now!",
+  },
+  webpush: {
+    fcmOptions: {
+      link: "http://localhost:5173",
     },
-  });
+  },
+});
 
   res.json({ success: true });
 }
+
+const updateName = async (req, res) => {
+  const email = req.user.email;
+  const { name } = req.body;
+
+  await userModel.updateOne({ email }, { $set: { name } });
+
+  res.json({ success: true });
+};
+
+
 
 // const getMyPosts = async (req, res) => {
 //   try {
@@ -1369,7 +1435,9 @@ export {
   deleteContact,
   updateContact,
   updateBirthday,
-  testNotification
+  testNotification,
+  updateName,
+  sendPasswordOtp
 
 
 };

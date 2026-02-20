@@ -34,6 +34,7 @@ import {
   request,
   resetpassword,
   sendotp,
+  sendPasswordOtp,
   sendPostToChats,
   signup,
   testNotification,
@@ -42,6 +43,7 @@ import {
   updateCommentPermission,
   updateContact,
   updateGender,
+  updateName,
   updateNotifications,
   // unconnect,
   updatePost,
@@ -103,6 +105,8 @@ userrouter.post( "/deleteContact", authMiddleware, deleteContact);
 userrouter.post( "/updateContact", authMiddleware,updateContact);
 userrouter.post( "/updateBirthday", authMiddleware, updateBirthday);
 userrouter.post( "/testNotification", authMiddleware, testNotification);
+userrouter.post( "/updateName", authMiddleware, updateName);
+userrouter.post("/sendPasswordOtp", authMiddleware, sendPasswordOtp);
 
 
 
