@@ -1111,7 +1111,6 @@ const getUserSettings = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
-
 // DELETE COMMENT
 const deleteComment = async (req, res) => {
   try {
@@ -1125,8 +1124,12 @@ const deleteComment = async (req, res) => {
     const comment = post.comments.id(commentId);
     if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
 
-    // Only owner of comment can delete
-    if (comment.userId.toString() !== userId) return res.status(403).json({ success: false, message: "Cannot delete this comment" });
+    // Only owner of comment or post can delete
+    if (
+      comment.userId.toString() !== userId &&
+      post.userId.toString() !== userId
+    )
+      return res.status(403).json({ success: false, message: "Cannot delete this comment" });
 
     comment.deleteOne();
     await postOwner.save();
@@ -1137,6 +1140,8 @@ const deleteComment = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
 
 
 const addContactNumber = async (req, res) => {
@@ -1276,53 +1281,68 @@ const testNotification =async (req, res) => {
   res.json({ success: true });
 }
 
-// const getMyPosts = async (req, res) => {
-//   try {
-//     const userId = req.user.id;
+// POST /user/save-post
+// POST /user/save-post
+const savePost = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { postId } = req.body;
 
-//     const user = await userModel
-//       .findById(userId)
-//       .select("username img post");
+    const user = await userModel.findById(userId);
 
-//     if (!user)
-//       return res
-//         .status(404)
-//         .json({ success: false });
+    if (!user.savedPosts) {
+      user.savedPosts = [];
+    }
 
-//     const posts = user.post.map((p) => ({
-//       _id: p._id,
-//       image: p.image,
-//       caption: p.caption,
-//       createdAt: p.createdAt,
-//       likes: p.likes || 0,
-//       comments: p.comments || [],
-//       isLiked: p.likedBy?.some(
-//         (id) => id.toString() === userId
-//       ),
-//       userId: {
-//         username: user.username,
-//         img: user.img,
-//       },
-//     }));
+    const existing = user.savedPosts.find(
+      (p) => p.postId.toString() === postId
+    );
 
-//     posts.sort(
-//       (a, b) =>
-//         new Date(b.createdAt) -
-//         new Date(a.createdAt)
-//     );
-
-//     res.json({ success: true, posts });
-//   } catch (err) {
-//     res
-//       .status(500)
-//       .json({ success: false });
-//   }
-// };
+    if (existing) {
+      user.savedPosts = user.savedPosts.filter(
+        (p) => p.postId.toString() !== postId
+      );
+      await user.save();
+      return res.json({ success: true, saved: false });
+    } else {
+      user.savedPosts.push({
+        postId,
+        savedAt: new Date(),
+      });
+      await user.save();
+      return res.json({ success: true, saved: true });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+};
 
 
+const getSavedPosts = async (req, res) => {
+  try {
+    const user = await userModel
+      .findById(req.user.id)
+      .populate({
+        path: "savedPosts.postId",
+        populate: { path: "userId", select: "username img" },
+      });
 
+    if (!user) {
+      return res.status(404).json({ success: false });
+    }
 
+    const posts = user.savedPosts
+      .map((item) => item.postId)
+      .filter((post) => post !== null);
 
+    res.json({ success: true, posts });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+};
 
 
 
@@ -1369,7 +1389,11 @@ export {
   deleteContact,
   updateContact,
   updateBirthday,
-  testNotification
+  testNotification,
+  savePost,
+  getSavedPosts,
+
+
 
 
 };
