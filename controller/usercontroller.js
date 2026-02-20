@@ -1,4 +1,4 @@
-// import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import userModel from "../models/users.js";
 import bcrypt from "bcrypt";
@@ -28,10 +28,16 @@ const sendotp = async (req, res) => {
   }
 
   const otp = Math.floor(10000 + Math.random() * 90000);
+
+
+  
   const newotp = new otpModel({
     otp: otp,
     email: email,
   });
+
+
+  
   await newotp.save();
 
   console.log("OTP for", email, otp);
@@ -55,6 +61,7 @@ const verifyotp = async (req, res) => {
   try {
     let { email, otp } = req.body;
 
+
     // normalize email
     email = email.trim().toLowerCase();
 
@@ -73,7 +80,7 @@ const verifyotp = async (req, res) => {
     console.log("Stored OTP:", otps.otp);
 
     // 🔴 SECOND CHECK: OTP match
-    if (otps.otp.toString() === otp.toString()) {
+    if (otps.otp == otp) {
       await otpModel.deleteOne({ email });
 
       return res.json({
@@ -964,7 +971,7 @@ const updateGender = async (req, res) => {
       { upsert: true },
     );
 
-    console.log(users);
+  
 
     if (users) {
       res.status(200).json({
@@ -1037,89 +1044,53 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword, otp } = req.body;
     const email = req.user.email;
 
-    // OTP Check
-    if (otpStore[email] != otp) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP Code",
-      });
+    if (!otp) {
+      return res.status(400).json({ message: "OTP required" });
     }
 
-    // Remove OTP after success
-    delete otpStore[email];
+    // const savedOtp = await otpModel.findOne({ email });
+
+    // if (!savedOtp) {
+    //   return res.status(400).json({ message: "OTP expired or invalid" });
+    // }
+
+    // if (savedOtp.otp.toString() !== otp) {
+    //   return res.status(400).json({ message: "Incorrect OTP" });
+    // }
+
+    // if (savedOtp.expiresAt < Date.now()) {
+    //   return res.status(400).json({ message: "OTP expired" });
+    // }
 
     const user = await userModel.findOne({ email });
 
-    const isMatch = bcrypt.compare(currentPassword, user.password);
+    const isMatch =  bcrypt.compare(
+      currentPassword,
+      user.password
+    );
 
     if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password incorrect",
-      });
+      return res.status(400).json({ message: "Current password incorrect" });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
     await user.save();
+
+    // Delete OTP after success
+    await otpModel.deleteMany({ email });
 
     res.status(200).json({
       success: true,
       message: "Password changed successfully",
     });
+
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
-import nodemailer from "nodemailer";
-
-
-
-const sendPasswordOtp = async (req, res) => {
-  try {
-    const email = req.user.email;
-
-    // Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000);
-
-    // Store OTP temporarily
-    otpStore[email] = otp;
-
-    // Email transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    // Mail options
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Password Change Verification Code",
-      text: `Your OTP code is: ${otp}`,
-    };
-
-    // Send Email
-    await transporter.sendMail(mailOptions);
-
-    res.status(200).json({
-      success: true,
-      message: "OTP sent to your email",
-    });
-  } catch (error) {
-    console.log("OTP Send Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to send OTP",
-    });
-  }
-};
-
 
 
 const updateCommentPermission = async (req, res) => {
@@ -1463,11 +1434,9 @@ export {
   updateBirthday,
   testNotification,
   updateName,
-  sendPasswordOtp
-
   savePost,
   getSavedPosts,
-
+ 
 
 
 };
