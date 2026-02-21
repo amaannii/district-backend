@@ -22,6 +22,7 @@ import {
   getContacts,
   getFeedPosts,
   getimage,
+  getProfile,
   getSavedPosts,
   getUserSettings,
   googlelogin,
@@ -40,6 +41,7 @@ import {
   sendPostToChats,
   signup,
   testNotification,
+  unsavePost,
   updateBio,
   updateBirthday,
   updateCommentPermission,
@@ -112,7 +114,9 @@ userrouter.post( "/updateName", authMiddleware, updateName);
 userrouter.post("/sendPasswordOtp", authMiddleware, sendPasswordOtp);
 
 userrouter.post( "/save-post", authMiddleware, savePost);
-userrouter.get( "/saved-posts", authMiddleware,getSavedPosts);
+userrouter.get( "/get-saved-posts", authMiddleware,getSavedPosts);
+userrouter.get("/profile/:userId", authMiddleware,getProfile);
+userrouter.delete("/unsave/:postId", authMiddleware, unsavePost);
 
 
 
