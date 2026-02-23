@@ -1161,35 +1161,7 @@ const getUserSettings = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
-// DELETE COMMENT
-const deleteComment = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { postId, commentId } = req.body;
 
-    const postOwner = await userModel.findOne({ "post._id": postId });
-    if (!postOwner) return res.status(404).json({ success: false, message: "Post not found" });
-
-    const post = postOwner.post.id(postId);
-    const comment = post.comments.id(commentId);
-    if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
-
-    // Only owner of comment or post can delete
-    if (
-      comment.userId.toString() !== userId &&
-      post.userId.toString() !== userId
-    )
-      return res.status(403).json({ success: false, message: "Cannot delete this comment" });
-
-    comment.deleteOne();
-    await postOwner.save();
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
 
 
 
@@ -1480,8 +1452,61 @@ const unsavePost = async (req, res) => {
   }
 };
 
+const deleteComment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.body;
+    const userId = req.user.id;
 
+    // Find the user who owns the post
+    const postOwner = await userModel.findOne({ "post._id": postId });
 
+    if (!postOwner) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const post = postOwner.post.id(postId);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    // ✅ Only comment owner can delete
+    if (comment.userId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete this comment",
+      });
+    }
+
+    comment.deleteOne();
+    await postOwner.save();
+
+    res.json({
+      success: true,
+      message: "Comment deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete comment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 
 export {
   sendotp,
@@ -1520,7 +1545,7 @@ export {
   changePassword,
   updateCommentPermission,
   getUserSettings,
-  deleteComment,
+ 
   addContactNumber,
   getContacts,
   deleteContact,
@@ -1533,8 +1558,8 @@ export {
   savePost,
   getSavedPosts,
   getProfile,
-  unsavePost
-
+  unsavePost,
+  deleteComment,
 
 
 };
