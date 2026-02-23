@@ -37,7 +37,6 @@ import {
   resetpassword,
   savePost,
   sendotp,
-  sendPasswordOtp,
   sendPostToChats,
   signup,
   testNotification,
@@ -112,7 +111,6 @@ userrouter.post( "/updateBirthday", authMiddleware, updateBirthday);
 userrouter.post( "/testNotification", authMiddleware, testNotification);
 
 userrouter.post( "/updateName", authMiddleware, updateName);
-userrouter.post("/sendPasswordOtp", authMiddleware, sendPasswordOtp);
 
 userrouter.post( "/save-post", authMiddleware, savePost);
 userrouter.get( "/get-saved-posts", authMiddleware,getSavedPosts);

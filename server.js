@@ -1,40 +1,84 @@
-import express from "express"
+import express from "express";
 import connected from "./database/connect.js";
-import dotenv from "dotenv"
-import cors from "cors"
-import nodemailer from 'nodemailer';
+import dotenv from "dotenv";
+import cors from "cors";
 import userrouter from "./Routes/user.js";
 import adminrouter from "./Routes/admin.js";
+import http from "http";
+import { Server } from "socket.io";
+import Message from "./models/Message.js";
+import message from "./Routes/messages.js";
 
+dotenv.config();
 
-dotenv.config()
+/* ================= APP SETUP ================= */
 
-const app=express()
+const app = express();
 
-connected
+// Connect Database
+connected;
 
+// Middleware
 app.use(express.json());
 
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true 
-}));
+/* ================= ROUTES ================= */
 
+app.use("/admin", adminrouter);
+app.use("/user", userrouter);
+app.use("/messages", message);
 
-app.use("/admin",adminrouter)
-app.use("/user",userrouter)
+/* ================= SOCKET.IO SETUP ================= */
 
+const server = http.createServer(app);
 
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    credentials: true,
+  },
+});
 
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
 
+  socket.on("joinDistrict", (district) => {
+    socket.join(district);
+  });
 
+  // 🔥 SAVE MESSAGE + EMIT
+  socket.on("sendMessage", async ({ district, message, sender }) => {
+    try {
+      // 1️⃣ Save to MongoDB
+      const newMessage = await Message.create({
+        district,
+        sender,
+        message,
+      });
 
+      // 2️⃣ Send to all users in that district
+      io.to(district).emit("receiveMessage", newMessage);
 
+    } catch (error) {
+      console.error("Error saving message:", error.message);
+    }
+  });
 
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
 
+/* ================= START SERVER ================= */
 
-app.listen(3001,()=>{
-console.log("server is connected succefully");
+const PORT = process.env.PORT || 3001;
 
-})
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
