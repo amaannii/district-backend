@@ -1132,35 +1132,7 @@ const getUserSettings = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
-// DELETE COMMENT
-const deleteComment = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { postId, commentId } = req.body;
 
-    const postOwner = await userModel.findOne({ "post._id": postId });
-    if (!postOwner) return res.status(404).json({ success: false, message: "Post not found" });
-
-    const post = postOwner.post.id(postId);
-    const comment = post.comments.id(commentId);
-    if (!comment) return res.status(404).json({ success: false, message: "Comment not found" });
-
-    // Only owner of comment or post can delete
-    if (
-      comment.userId.toString() !== userId &&
-      post.userId.toString() !== userId
-    )
-      return res.status(403).json({ success: false, message: "Cannot delete this comment" });
-
-    comment.deleteOne();
-    await postOwner.save();
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
 
 
 
@@ -1326,68 +1298,186 @@ const updateName = async (req, res) => {
 // POST /user/save-post
 // POST /user/save-post
 const savePost = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { postId } = req.body;
+  const { postId,username } = req.body;
+  const user = await userModel.findOne({email:req.user.email});
+  console.log(postId,username);
+  
 
+  if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    const user = await userModel.findById(userId);
+  // const alreadySaved = user.savedPosts.some(
+  //   (p) => p.postId.toString() === postId
+  // );
 
-    if (!user.savedPosts) {
-      user.savedPosts = [];
+  // if (alreadySaved) {
+  //   user.savedPosts = user.savedPosts.filter((p) => p.postId.toString() !== postId);
+  // } else {
+    if(user.savedPosts){
+      await userModel.updateOne({email:req.user.email},{$push:{savedPosts:{ postId, savedAt: new Date(),username:username }}});
+    }else{
+     const user1= await userModel.updateOne({email:req.user.email},{$set:{savedPosts:[{ postId, savedAt: new Date(),username:username }]}});
+      console.log(user1);
+      
     }
 
-    const existing = user.savedPosts.find(
-      (p) => p.postId.toString() === postId
-    );
 
-    if (existing) {
-      user.savedPosts = user.savedPosts.filter(
-        (p) => p.postId.toString() !== postId
-      );
-      await user.save();
-      return res.json({ success: true, saved: false });
-    } else {
-      user.savedPosts.push({
-        postId,
-        savedAt: new Date(),
-      });
-      await user.save();
-      return res.json({ success: true, saved: true });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
-  }
+  res.json({ success: true, saved: "saved successfully" }); // returns new status
 };
-
 
 const getSavedPosts = async (req, res) => {
   try {
-    const user = await userModel
-      .findById(req.user.id)
-      .populate({
-        path: "savedPosts.postId",
-        populate: { path: "userId", select: "username img" },
-      });
+    const currentUser = await userModel.findOne({ email: req.user.email });
 
-    if (!user) {
-      return res.status(404).json({ success: false });
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const posts = user.savedPosts
-      .map((item) => item.postId)
-      .filter((post) => post !== null);
+    let allSavedPosts = [];
 
-    res.json({ success: true, posts });
+    for (let saved of currentUser.savedPosts) {
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
+      // Find the user who owns this post
+      const postOwner = await userModel.findOne({
+        username: saved.username,
+        "post._id": saved.postId
+      });
+
+      if (!postOwner) continue;
+
+      // Find the specific post inside their post array
+      const postData = postOwner.post.id(saved.postId);
+
+      if (!postData) continue;
+
+      // Push combined data
+      allSavedPosts.push({
+        ...postData._doc,
+        postOwner: {
+          username: postOwner.username,
+          name: postOwner.name,
+          avatar: postOwner.avatar
+        },
+        savedAt: saved.savedAt
+      });
+    }
+
+    res.status(200).json(allSavedPosts);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
 
 
+// GET /api/profile/:userId
+const getProfile = async (req, res) => {
+  try {
+    const profileUser = await userModel.findById(req.params.userId);
+
+    if (!profileUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Always send posts
+    const posts = profileUser.post;
+
+    let savedPosts = [];
+
+    // ✅ Only owner can see saved posts
+    if (req.user.id === req.params.userId) {
+      savedPosts = profileUser.savedPosts;
+    }
+
+    res.json({
+      profileUser,
+      posts,
+      savedPosts,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+const unsavePost = async (req, res) => {
+  try {
+    const user = await userModel.findOne({ email: req.user.email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.savedPosts = user.savedPosts.filter(
+      post => post.postId.toString() !== req.params.postId
+    );
+
+    await user.save();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false });
+  }
+};
+
+const deleteComment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.body;
+    const userId = req.user.id;
+
+    // Find the user who owns the post
+    const postOwner = await userModel.findOne({ "post._id": postId });
+
+    if (!postOwner) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const post = postOwner.post.id(postId);
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const comment = post.comments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    // ✅ Only comment owner can delete
+    if (comment.userId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete this comment",
+      });
+    }
+
+    comment.deleteOne();
+    await postOwner.save();
+
+    res.json({
+      success: true,
+      message: "Comment deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete comment error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 
 export {
   sendotp,
@@ -1426,7 +1516,7 @@ export {
   changePassword,
   updateCommentPermission,
   getUserSettings,
-  deleteComment,
+
   addContactNumber,
   getContacts,
   deleteContact,
@@ -1434,9 +1524,16 @@ export {
   updateBirthday,
   testNotification,
   updateName,
+  sendPasswordOtp,
+  savePost,
+  getSavedPosts,
+  getProfile,
+  unsavePost,
+  deleteComment,
   savePost,
   getSavedPosts,
  
+
 
 
 };

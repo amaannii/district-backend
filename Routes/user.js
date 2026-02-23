@@ -22,6 +22,7 @@ import {
   getContacts,
   getFeedPosts,
   getimage,
+  getProfile,
   getSavedPosts,
   getUserSettings,
   googlelogin,
@@ -39,6 +40,7 @@ import {
   sendPostToChats,
   signup,
   testNotification,
+  unsavePost,
   updateBio,
   updateBirthday,
   updateCommentPermission,
@@ -84,9 +86,10 @@ userrouter.get("/feed", authMiddleware, getFeedPosts);
 userrouter.get("/image", authMiddleware, getimage);
 userrouter.post("/like-post", authMiddleware, likePost);
 userrouter.post("/add-comment", authMiddleware, addComment);
+userrouter.post("/delete-comment", authMiddleware, deleteComment);
 userrouter.get("/notes", authMiddleware,notes)
 userrouter.post("/note", authMiddleware,note)
-userrouter.delete("/delete-comment", authMiddleware,deleteComment);
+
 userrouter.put("/update-post/:postId", authMiddleware,updatePost);
 userrouter.delete("/delete-post/:postId", authMiddleware,deletePost);
 userrouter.post("/deleted", authMiddleware,deletedimg);
@@ -110,7 +113,11 @@ userrouter.post( "/testNotification", authMiddleware, testNotification);
 userrouter.post( "/updateName", authMiddleware, updateName);
 
 userrouter.post( "/save-post", authMiddleware, savePost);
-userrouter.get( "/saved-posts", authMiddleware,getSavedPosts);
+userrouter.get( "/get-saved-posts", authMiddleware,getSavedPosts);
+userrouter.get("/profile/:userId", authMiddleware,getProfile);
+userrouter.delete("/unsave/:postId", authMiddleware, unsavePost);
+
+
 
 
 

@@ -74,20 +74,6 @@ const userSchema = new mongoose.Schema(
             },
           },
         ],
-        
-savedPosts: [
-  {
-    postId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Post", // VERY IMPORTANT
-    },
-    savedAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-],
-
 
 
         default: [],
@@ -102,6 +88,15 @@ savedPosts: [
         Date: Date,
       },
     ],
+            
+savedPosts: [
+  {
+    postId: { type: mongoose.Schema.Types.ObjectId },
+    username: String,
+    savedAt: { type: Date, default: Date.now },
+  }
+],
+
 
     connected: [
       {
