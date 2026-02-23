@@ -83,7 +83,7 @@ const verifyotp = async (req, res) => {
     if (otps.otp == otp) {
       await otpModel.deleteOne({ email });
 
-      return res.json({
+      return res.json({ 
         status: true,
         message: "OTP verified successfully",
       });
