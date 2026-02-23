@@ -314,42 +314,47 @@ const addSampleNotifications = async (req, res) => {
 const googlelogin = async (req, res) => {
   try {
     const { name, email } = req.body;
-    console.log(name, email);
 
     let user = await userModel.findOne({ email });
-    console.log(user);
 
     // 🟢 USER DOES NOT EXIST → CREATE
     if (!user) {
-      const newUser = new userModel({
+      user = new userModel({
         name,
         email,
+        role: "user", // default role
       });
 
-      const savedUser = await newUser.save();
-
-      return res.status(200).json({
-        status: true,
-        user: savedUser,
-        message: "User created via Google login",
-      });
+      await user.save();
     }
 
-    // 🟢 USER EXISTS → LOGIN SUCCESS
-    return res.status(200).json({
+    // 🔐 CREATE TOKEN
+    const token = jwt.sign(
+      {
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(200).json({
       success: true,
-      user,
+      token,
+      email: user.email,
+      role: user.role,
       message: "Google login successful",
     });
-  } catch (error) {
-    console.log("GOOGLE LOGIN ERROR:", error);
 
+  } catch (error) {
+    console.log(error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Google login failed",
     });
   }
 };
+
 
 const completeProfile = async (req, res) => {
   const { password, username, email } = req.body;
@@ -1524,9 +1529,6 @@ export {
   updateBirthday,
   testNotification,
   updateName,
-  sendPasswordOtp,
-  savePost,
-  getSavedPosts,
   getProfile,
   unsavePost,
   deleteComment,
