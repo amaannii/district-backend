@@ -14,6 +14,11 @@ const messageSchema = new mongoose.Schema(
   type: Object,
   required: true,
 },
+ post: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      default: null,
+    },
   },
   { timestamps: true } // adds createdAt automatically
 );

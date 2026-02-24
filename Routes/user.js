@@ -20,6 +20,7 @@ import {
   deletePost,
   explorePosts,
   getContacts,
+  getDistrictMessages,
   getFeedPosts,
   getimage,
   getProfile,
@@ -89,7 +90,6 @@ userrouter.post("/add-comment", authMiddleware, addComment);
 userrouter.post("/delete-comment", authMiddleware, deleteComment);
 userrouter.get("/notes", authMiddleware,notes)
 userrouter.post("/note", authMiddleware,note)
-
 userrouter.put("/update-post/:postId", authMiddleware,updatePost);
 userrouter.delete("/delete-post/:postId", authMiddleware,deletePost);
 userrouter.post("/deleted", authMiddleware,deletedimg);
@@ -109,12 +109,11 @@ userrouter.post( "/deleteContact", authMiddleware, deleteContact);
 userrouter.post( "/updateContact", authMiddleware,updateContact);
 userrouter.post( "/updateBirthday", authMiddleware, updateBirthday);
 userrouter.post( "/testNotification", authMiddleware, testNotification);
-
 userrouter.post( "/updateName", authMiddleware, updateName);
-
 userrouter.post( "/save-post", authMiddleware, savePost);
 userrouter.get( "/get-saved-posts", authMiddleware,getSavedPosts);
 userrouter.get("/profile/:userId", authMiddleware,getProfile);
+userrouter.get("/messages/:district", getDistrictMessages);
 userrouter.delete("/unsave/:postId", authMiddleware, unsavePost);
 
 
