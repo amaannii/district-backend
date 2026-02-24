@@ -941,26 +941,7 @@ const deletePost = async (req, res) => {
   }
 };
 
-const sendPostToChats = async (req, res) => {
-  try {
-    const { chatIds, postId } = req.body;
-    const senderId = req.user.id;
 
-    for (let chatId of chatIds) {
-      await Messages.create({
-        chatId,
-        senderId,
-        type: "post",
-        content: postId,
-      });
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
-  }
-};
 
 const updateGender = async (req, res) => {
   try {
@@ -1484,6 +1465,47 @@ const deleteComment = async (req, res) => {
   }
 };
 
+
+const sendPostToChats = async (req, res) => {
+  try {
+    const { chatIds, postId } = req.body; // chatIds = array of districts
+    const senderId = req.user.id;
+
+    if (!chatIds || !postId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing data",
+      });
+    }
+
+    // Get sender info
+    const sender = await userModel.findById(senderId).select("username name img");
+
+    for (let district of chatIds) {
+      // Find all users in that district (or you can maintain a list of users per district)
+      const usersInDistrict = await userModel.find({ "contacts": district }); // Or any field indicating district
+
+      for (let user of usersInDistrict) {
+        user.connecting = user.connecting || [];
+        user.connecting.push({
+          username: sender.username,
+          name: sender.name,
+          img: sender.img,
+          Date: new Date(),
+          postId,
+          district, // ✅ keep track of district
+        });
+
+        await user.save();
+      }
+    }
+
+    res.json({ success: true, message: "Post shared successfully ✅" });
+  } catch (err) {
+    console.error("Share error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 export {
   sendotp,
   verifyotp,
@@ -1529,13 +1551,13 @@ export {
   updateBirthday,
   testNotification,
   updateName,
+  savePost,
   getProfile,
   unsavePost,
   deleteComment,
-  savePost,
   getSavedPosts,
  
 
 
 
-};
+}; 
