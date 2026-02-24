@@ -796,6 +796,7 @@ const notes = async (req, res) => {
         img: me.img,
         note: me.note,
       },
+      user:me.username,
 
       // Connected users notes
       connectedNotes,
