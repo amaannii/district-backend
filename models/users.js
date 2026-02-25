@@ -97,25 +97,41 @@ savedPosts: [
   }
 ],
 
+request: {
+  type: [
+    {
+      username: String,
+      name: String,
+      img: String,
+      Date: Date,
+    },
+  ],
+  default: [],
+},
 
-    connected: [
-      {
-        username: String,
-        name: String,
-        img: String,
-        Date: Date,
-      },
-    ],
+connected: {
+  type: [
+    {
+      username: String,
+      name: String,
+      img: String,
+      Date: Date,
+    },
+  ],
+  default: [],
+},
 
-    connecting: [
-      {
-        username: String,
-        name: String,
-        img: String,
-        Date: Date,
-      },
-    ],
-
+connecting: {
+  type: [
+    {
+      username: String,
+      name: String,
+      img: String,
+      Date: Date,
+    },
+  ],
+  default: [],
+},
     note: {
       type: String,
       default: "",

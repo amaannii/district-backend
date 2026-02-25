@@ -1588,7 +1588,99 @@ const getDistrictMessages = async (req, res) => {
   }
 };
 
-  
+
+
+const unconnect = async (req, res) => {
+  try {
+    const { username } = req.body;
+    const email = req.user.email;
+
+    const currentUser = await userModel.findOne({ email });
+    const targetUser = await userModel.findOne({ username });
+
+    if (!targetUser)
+      return res.status(404).json({ success: false, message: "User not found" });
+
+    // Remove each other from connected and connecting arrays
+    currentUser.connected = currentUser.connected.filter(c => c.username !== username);
+    currentUser.connecting = currentUser.connecting.filter(c => c.username !== username);
+
+    targetUser.connected = targetUser.connected.filter(c => c.username !== currentUser.username);
+    targetUser.connecting = targetUser.connecting.filter(c => c.username !== currentUser.username);
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.json({ success: true, message: `Disconnected from ${username}` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+const connectionStatus = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const { username } = req.params;
+
+    const currentUser = await userModel.findOne({ email });
+
+    if (!currentUser) {
+      return res.status(404).json({ status: "none" });
+    }
+
+    // ✅ check connected
+    const isConnected = currentUser.connected.some(
+      (u) => u.username === username
+    );
+
+    if (isConnected) {
+      return res.json({ status: "connected" });
+    }
+
+    // ✅ check request sent
+    const isRequested = currentUser.connecting.some(
+      (u) => u.username === username
+    );
+
+    if (isRequested) {
+      return res.json({ status: "requested" });
+    }
+
+    return res.json({ status: "none" });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: "none" });
+  }
+};
+
+
+
+const getConnections = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const type = req.params.type;
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    let list = [];
+
+    if (type === "connected") list = user.connected || [];
+    else if (type === "connecting") list = user.connecting || [];
+    else return res.status(400).json({ success: false, message: "Invalid type" });
+
+    res.json({ success: true, type, users: list });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 export {
   sendotp,
   verifyotp,
@@ -1638,8 +1730,12 @@ export {
   unsavePost,
   deleteComment,
   getSavedPosts,
+
+ connectionStatus,
+ unconnect,
+getConnections,
+
   getDistrictMessages,
- 
 
 
 
