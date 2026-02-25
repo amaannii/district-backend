@@ -110,10 +110,10 @@ userrouter.post( "/updateContact", authMiddleware,updateContact);
 userrouter.post( "/updateBirthday", authMiddleware, updateBirthday);
 userrouter.post( "/testNotification", authMiddleware, testNotification);
 userrouter.post( "/updateName", authMiddleware, updateName);
+userrouter.post( "/send-post-to-chats", authMiddleware, sendPostToChats);
 userrouter.post( "/save-post", authMiddleware, savePost);
 userrouter.get( "/get-saved-posts", authMiddleware,getSavedPosts);
 userrouter.get("/profile/:userId", authMiddleware,getProfile);
-userrouter.get("/messages/:district", getDistrictMessages);
 userrouter.delete("/unsave/:postId", authMiddleware, unsavePost);
 
 

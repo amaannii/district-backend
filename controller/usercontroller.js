@@ -1535,21 +1535,60 @@ const sendPostToChats = async (req, res) => {
 };
 
 
- const getDistrictMessages = async (req, res) => {
+const getDistrictMessages = async (req, res) => {
   try {
     const { district } = req.params;
 
     const messages = await Message.find({ district })
-      .populate("post")
       .sort({ createdAt: 1 });
+      console.log(messages);
+      
 
-    res.json({ success: true, messages });
+    const updatedMessages = await Promise.all(
+      messages.map(async (msg) => {
+
+        if (msg.post) {
+
+          const postOwner = await userModel.findOne({
+            "post._id": msg.post,
+          });
+          console.log(postOwner);
+          
+
+          if (postOwner) {
+
+            const fullPost = postOwner.post.id(msg.post);
+
+            return {
+              ...msg._doc,
+              post: {
+                _id: fullPost._id,
+                image: fullPost.image,   // ✅ IMAGE LINK
+                caption: fullPost.caption,
+                likes: fullPost.likes,
+              },
+              postOwner: {
+                _id: postOwner._id,
+                username: postOwner.username,
+                avatar: postOwner.img,
+              },
+            };
+          }
+        }
+
+        return msg;
+      })
+    );
+
+    res.json({ success: true, messages: updatedMessages });
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false });
   }
 };
 
-
+  
 export {
   sendotp,
   verifyotp,
@@ -1587,7 +1626,6 @@ export {
   changePassword,
   updateCommentPermission,
   getUserSettings,
-
   addContactNumber,
   getContacts,
   deleteContact,
@@ -1600,7 +1638,7 @@ export {
   unsavePost,
   deleteComment,
   getSavedPosts,
-  getDistrictMessages
+  getDistrictMessages,
  
 
 
