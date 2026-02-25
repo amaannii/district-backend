@@ -52,6 +52,23 @@ io.on("connection", (socket) => {
     socket.join(district);
   });
 
+  // 🔥 SHARE POST TO DISTRICT
+socket.on("sharePost", async ({ district, postId, sender }) => {
+  try {
+    const newMessage = await Message.create({
+      district,
+      sender,
+      type: "post",
+      post: postId,
+    });
+
+    io.to(district).emit("receiveMessage", newMessage);
+
+  } catch (error) {
+    console.error("Error sharing post:", error.message);
+  }
+});
+
   // 🔥 SAVE MESSAGE + EMIT
   socket.on("sendMessage", async ({ district, message, sender }) => {
     try {
@@ -73,7 +90,9 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
+
 });
+
 
 /* ================= START SERVER ================= */
 

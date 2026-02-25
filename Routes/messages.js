@@ -1,19 +1,10 @@
 import express from "express";
 import Message from "../models/Message.js";
+import { getDistrictMessages } from "../controller/usercontroller.js";
 
 const message = express.Router();
 
 // Get messages by district
-message.get("/:district", async (req, res) => {
-  try {
-    const messages = await Message.find({
-      district: req.params.district,
-    }).sort({ createdAt: 1 });
-
-    res.json(messages);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+message.get("/:district", getDistrictMessages);
 
 export default message;

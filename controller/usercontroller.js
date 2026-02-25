@@ -6,6 +6,9 @@ import otpModel from "../models/otp.js";
 import jwt from "jsonwebtoken";
 import ActivityLog from "../models/ActivityLog.js";
 import mongoose from "mongoose";
+import Message from "../models/Message.js";
+
+
 
 
 dotenv.config();
@@ -1469,44 +1472,123 @@ const deleteComment = async (req, res) => {
 
 const sendPostToChats = async (req, res) => {
   try {
-    const { chatIds, postId } = req.body; // chatIds = array of districts
+    const { chatIds, postId } = req.body;
     const senderId = req.user.id;
 
-    if (!chatIds || !postId) {
+    if (!chatIds?.length || !postId) {
       return res.status(400).json({
         success: false,
         message: "Missing data",
       });
     }
 
-    // Get sender info
-    const sender = await userModel.findById(senderId).select("username name img");
+    // Get sender
+    const sender = await userModel
+      .findById(senderId)
+      .select("username");
 
-    for (let district of chatIds) {
-      // Find all users in that district (or you can maintain a list of users per district)
-      const usersInDistrict = await userModel.find({ "contacts": district }); // Or any field indicating district
-
-      for (let user of usersInDistrict) {
-        user.connecting = user.connecting || [];
-        user.connecting.push({
-          username: sender.username,
-          name: sender.name,
-          img: sender.img,
-          Date: new Date(),
-          postId,
-          district, // ✅ keep track of district
-        });
-
-        await user.save();
-      }
+    if (!sender) {
+      return res.status(404).json({
+        success: false,
+        message: "Sender not found",
+      });
     }
 
-    res.json({ success: true, message: "Post shared successfully ✅" });
+
+    // 🔥 Find post inside users
+    const postOwner = await userModel.findOne({
+      "post._id": postId,
+    });
+
+    if (!postOwner) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      }); 
+    }
+
+    const post = postOwner.post.id(postId);
+
+    // Create one message per district
+    for (let district of chatIds) {
+      await Message.create({
+        district,
+        sender: sender.username,
+        type: "post",
+        post: post._id,
+        postOwner: postOwner._id, // VERY IMPORTANT
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Post shared successfully ✅",
+    });
+
   } catch (err) {
     console.error("Share error:", err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
+
+
+const getDistrictMessages = async (req, res) => {
+  try {
+    const { district } = req.params;
+
+    const messages = await Message.find({ district })
+      .sort({ createdAt: 1 });
+      console.log(messages);
+      
+
+    const updatedMessages = await Promise.all(
+      messages.map(async (msg) => {
+
+        if (msg.post) {
+
+          const postOwner = await userModel.findOne({
+            "post._id": msg.post,
+          });
+          console.log(postOwner);
+          
+
+          if (postOwner) {
+
+            const fullPost = postOwner.post.id(msg.post);
+
+            return {
+              ...msg._doc,
+              post: {
+                _id: fullPost._id,
+                image: fullPost.image,   // ✅ IMAGE LINK
+                caption: fullPost.caption,
+                likes: fullPost.likes,
+              },
+              postOwner: {
+                _id: postOwner._id,
+                username: postOwner.username,
+                avatar: postOwner.img,
+              },
+            };
+          }
+        }
+
+        return msg;
+      })
+    );
+
+    res.json({ success: true, messages: updatedMessages });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+};
+
+  
 export {
   sendotp,
   verifyotp,
@@ -1544,7 +1626,6 @@ export {
   changePassword,
   updateCommentPermission,
   getUserSettings,
-
   addContactNumber,
   getContacts,
   deleteContact,
@@ -1557,6 +1638,7 @@ export {
   unsavePost,
   deleteComment,
   getSavedPosts,
+  getDistrictMessages,
  
 
 
