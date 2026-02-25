@@ -11,6 +11,7 @@ import {
   completeProfile,
   confirmnotification,
   confirmNotification,
+  connectionStatus,
   deleteComment,
   deleteContact,
   // connectionStatus,
@@ -19,6 +20,7 @@ import {
   deleteotp,
   deletePost,
   explorePosts,
+  getConnections,
   getContacts,
   getFeedPosts,
   getimage,
@@ -40,6 +42,7 @@ import {
   sendPostToChats,
   signup,
   testNotification,
+  unconnect,
   unsavePost,
   updateBio,
   updateBirthday,
@@ -117,9 +120,10 @@ userrouter.get( "/get-saved-posts", authMiddleware,getSavedPosts);
 userrouter.get("/profile/:userId", authMiddleware,getProfile);
 userrouter.delete("/unsave/:postId", authMiddleware, unsavePost);
 
+userrouter.post("/unconnect", authMiddleware,unconnect);
+userrouter.get("/connection-status/:username", authMiddleware,connectionStatus);
 
-
-
+userrouter.get("/:type", authMiddleware, getConnections);
 
 
 
