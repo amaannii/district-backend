@@ -8,9 +8,6 @@ import ActivityLog from "../models/ActivityLog.js";
 import mongoose from "mongoose";
 import Message from "../models/Message.js";
 
-
-
-
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -32,15 +29,11 @@ const sendotp = async (req, res) => {
 
   const otp = Math.floor(10000 + Math.random() * 90000);
 
-
-  
   const newotp = new otpModel({
     otp: otp,
     email: email,
   });
 
-
-  
   await newotp.save();
 
   console.log("OTP for", email, otp);
@@ -64,7 +57,6 @@ const verifyotp = async (req, res) => {
   try {
     let { email, otp } = req.body;
 
-
     // normalize email
     email = email.trim().toLowerCase();
 
@@ -86,7 +78,7 @@ const verifyotp = async (req, res) => {
     if (otps.otp == otp) {
       await otpModel.deleteOne({ email });
 
-      return res.json({ 
+      return res.json({
         status: true,
         message: "OTP verified successfully",
       });
@@ -213,11 +205,11 @@ const login = async (req, res) => {
       token,
       role: "User",
       user: {
-    id: user._id,
-    email: user.email,
-    username: user.username,
-    img: user.img,
-  },
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        img: user.img,
+      },
     });
   } catch (err) {
     console.error("User login error:", err);
@@ -338,7 +330,7 @@ const googlelogin = async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     res.status(200).json({
@@ -348,7 +340,6 @@ const googlelogin = async (req, res) => {
       role: user.role,
       message: "Google login successful",
     });
-
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -357,7 +348,6 @@ const googlelogin = async (req, res) => {
     });
   }
 };
-
 
 const completeProfile = async (req, res) => {
   const { password, username, email } = req.body;
@@ -492,6 +482,38 @@ const allusers = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+const checkconnecting = async (req, res) => {
+  try {
+    const { username } = req.body;
+    const email = req.user.email;
+
+    // 1️⃣ Find logged-in user
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // 2️⃣ Check if username exists in connecting array
+    const isConnecting = user.connecting.some((u) => u.username === username);
+
+    const isRequested = user.connecting.some((u) => u.username === username);
+
+    return res.json({
+      success: true,
+      isConnected,
+      isRequested,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
       error: error.message,
     });
@@ -645,7 +667,7 @@ const getFeedPosts = async (req, res) => {
 
     const users = await userModel.find(
       { "post.0": { $exists: true } },
-      { username: 1, img: 1, post: 1 }
+      { username: 1, img: 1, post: 1 },
     );
 
     let feedPosts = [];
@@ -659,9 +681,7 @@ const getFeedPosts = async (req, res) => {
           createdAt: p.createdAt,
           likes: p.likes || 0,
           comments: p.comments || [],
-          isLiked: p.likedBy?.some(
-            (id) => id.toString() === currentUserId
-          ),
+          isLiked: p.likedBy?.some((id) => id.toString() === currentUserId),
           userId: {
             _id: u._id,
             username: u.username,
@@ -671,9 +691,7 @@ const getFeedPosts = async (req, res) => {
       });
     });
 
-    feedPosts.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    feedPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.json({ success: true, posts: feedPosts });
   } catch (err) {
@@ -716,7 +734,10 @@ const likePost = async (req, res) => {
     const { postId } = req.body;
 
     const postOwner = await userModel.findOne({ "post._id": postId });
-    if (!postOwner) return res.status(404).json({ success: false, message: "Post not found" });
+    if (!postOwner)
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
 
     const post = postOwner.post.id(postId);
     post.likedBy = post.likedBy || [];
@@ -744,10 +765,14 @@ const addComment = async (req, res) => {
   try {
     const userId = req.user.id;
     const { postId, text } = req.body;
-    if (!text.trim()) return res.status(400).json({ success: false, message: "Comment empty" });
+    if (!text.trim())
+      return res.status(400).json({ success: false, message: "Comment empty" });
 
     const postOwner = await userModel.findOne({ "post._id": postId });
-    if (!postOwner) return res.status(404).json({ success: false, message: "Post not found" });
+    if (!postOwner)
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
 
     const post = postOwner.post.id(postId);
 
@@ -799,7 +824,7 @@ const notes = async (req, res) => {
         img: me.img,
         note: me.note,
       },
-      user:me.username,
+      user: me.username,
 
       // Connected users notes
       connectedNotes,
@@ -945,8 +970,6 @@ const deletePost = async (req, res) => {
   }
 };
 
-
-
 const updateGender = async (req, res) => {
   try {
     const { gender } = req.body;
@@ -960,8 +983,6 @@ const updateGender = async (req, res) => {
       { $set: { gender: gender } },
       { upsert: true },
     );
-
-  
 
     if (users) {
       res.status(200).json({
@@ -1054,10 +1075,7 @@ const changePassword = async (req, res) => {
 
     const user = await userModel.findOne({ email });
 
-    const isMatch =  bcrypt.compare(
-      currentPassword,
-      user.password
-    );
+    const isMatch = bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Current password incorrect" });
@@ -1075,13 +1093,11 @@ const changePassword = async (req, res) => {
       success: true,
       message: "Password changed successfully",
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-
 
 const updateCommentPermission = async (req, res) => {
   try {
@@ -1123,10 +1139,6 @@ const getUserSettings = async (req, res) => {
   }
 };
 
-
-
-
-
 const addContactNumber = async (req, res) => {
   try {
     const userId = req.user.id; // from token middleware
@@ -1150,7 +1162,7 @@ const addContactNumber = async (req, res) => {
     // ✅ Prevent duplicate numbers
 
     // ✅ Save number
-    user.contacts=number;
+    user.contacts = number;
     await user.save();
 
     res.json({
@@ -1167,11 +1179,9 @@ const getContacts = async (req, res) => {
   try {
     const email = req.user.email;
     console.log(email);
-    
 
-    const user = await userModel.findOne({email});
+    const user = await userModel.findOne({ email });
     console.log(user);
-    
 
     res.json({
       contacts: user.contacts,
@@ -1181,7 +1191,6 @@ const getContacts = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 const deleteContact = async (req, res) => {
   try {
@@ -1206,7 +1215,7 @@ const updateContact = async (req, res) => {
 
     const user = await userModel.updateOne(
       { email: email }, // find user by email
-      { $set: { contacts: newNumber } } // update contact field
+      { $set: { contacts: newNumber } }, // update contact field
     );
 
     res.status(200).json({
@@ -1232,7 +1241,7 @@ const updateBirthday = async (req, res) => {
       {
         birthday: { month, day, year },
       },
-      { new: true }
+      { new: true },
     );
 
     res.status(200).json({
@@ -1249,26 +1258,24 @@ const updateBirthday = async (req, res) => {
   }
 };
 
-
-const testNotification =async (req, res) => {
+const testNotification = async (req, res) => {
   const { token } = req.body;
 
-await admin.messaging().send({
-  token,
-  notification: {
-    title: "Hello Amani 🔥",
-    body: "Notification working now!",
-  },
-  webpush: {
-    fcmOptions: {
-      link: "http://localhost:5173",
+  await admin.messaging().send({
+    token,
+    notification: {
+      title: "Hello Amani 🔥",
+      body: "Notification working now!",
     },
-  },
-});
+    webpush: {
+      fcmOptions: {
+        link: "http://localhost:5173",
+      },
+    },
+  });
 
   res.json({ success: true });
-}
-
+};
 
 const updateName = async (req, res) => {
   const email = req.user.email;
@@ -1279,8 +1286,6 @@ const updateName = async (req, res) => {
   res.json({ success: true });
 };
 
-
-
 // const getMyPosts = async (req, res) => {
 //   try {
 //     const userId = req.user.id;
@@ -1288,12 +1293,12 @@ const updateName = async (req, res) => {
 // POST /user/save-post
 // POST /user/save-post
 const savePost = async (req, res) => {
-  const { postId,username } = req.body;
-  const user = await userModel.findOne({email:req.user.email});
-  console.log(postId,username);
-  
+  const { postId, username } = req.body;
+  const user = await userModel.findOne({ email: req.user.email });
+  console.log(postId, username);
 
-  if (!user) return res.status(404).json({ success: false, message: "User not found" });
+  if (!user)
+    return res.status(404).json({ success: false, message: "User not found" });
 
   // const alreadySaved = user.savedPosts.some(
   //   (p) => p.postId.toString() === postId
@@ -1302,14 +1307,26 @@ const savePost = async (req, res) => {
   // if (alreadySaved) {
   //   user.savedPosts = user.savedPosts.filter((p) => p.postId.toString() !== postId);
   // } else {
-    if(user.savedPosts){
-      await userModel.updateOne({email:req.user.email},{$push:{savedPosts:{ postId, savedAt: new Date(),username:username }}});
-    }else{
-     const user1= await userModel.updateOne({email:req.user.email},{$set:{savedPosts:[{ postId, savedAt: new Date(),username:username }]}});
-      console.log(user1);
-      
-    }
-
+  if (user.savedPosts) {
+    await userModel.updateOne(
+      { email: req.user.email },
+      {
+        $push: {
+          savedPosts: { postId, savedAt: new Date(), username: username },
+        },
+      },
+    );
+  } else {
+    const user1 = await userModel.updateOne(
+      { email: req.user.email },
+      {
+        $set: {
+          savedPosts: [{ postId, savedAt: new Date(), username: username }],
+        },
+      },
+    );
+    console.log(user1);
+  }
 
   res.json({ success: true, saved: "saved successfully" }); // returns new status
 };
@@ -1325,11 +1342,10 @@ const getSavedPosts = async (req, res) => {
     let allSavedPosts = [];
 
     for (let saved of currentUser.savedPosts) {
-
       // Find the user who owns this post
       const postOwner = await userModel.findOne({
         username: saved.username,
-        "post._id": saved.postId
+        "post._id": saved.postId,
       });
 
       if (!postOwner) continue;
@@ -1345,20 +1361,18 @@ const getSavedPosts = async (req, res) => {
         postOwner: {
           username: postOwner.username,
           name: postOwner.name,
-          avatar: postOwner.avatar
+          avatar: postOwner.avatar,
         },
-        savedAt: saved.savedAt
+        savedAt: saved.savedAt,
       });
     }
 
     res.status(200).json(allSavedPosts);
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-
 
 // GET /api/profile/:userId
 const getProfile = async (req, res) => {
@@ -1384,24 +1398,23 @@ const getProfile = async (req, res) => {
       posts,
       savedPosts,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 const unsavePost = async (req, res) => {
   try {
     const user = await userModel.findOne({ email: req.user.email });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     user.savedPosts = user.savedPosts.filter(
-      post => post.postId.toString() !== req.params.postId
+      (post) => post.postId.toString() !== req.params.postId,
     );
 
     await user.save();
@@ -1459,7 +1472,6 @@ const deleteComment = async (req, res) => {
       success: true,
       message: "Comment deleted successfully",
     });
-
   } catch (error) {
     console.error("Delete comment error:", error);
     res.status(500).json({
@@ -1468,7 +1480,6 @@ const deleteComment = async (req, res) => {
     });
   }
 };
-
 
 const sendPostToChats = async (req, res) => {
   try {
@@ -1483,9 +1494,7 @@ const sendPostToChats = async (req, res) => {
     }
 
     // Get sender
-    const sender = await userModel
-      .findById(senderId)
-      .select("username");
+    const sender = await userModel.findById(senderId).select("username");
 
     if (!sender) {
       return res.status(404).json({
@@ -1493,7 +1502,6 @@ const sendPostToChats = async (req, res) => {
         message: "Sender not found",
       });
     }
-
 
     // 🔥 Find post inside users
     const postOwner = await userModel.findOne({
@@ -1504,7 +1512,7 @@ const sendPostToChats = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Post not found",
-      }); 
+      });
     }
 
     const post = postOwner.post.id(postId);
@@ -1524,7 +1532,6 @@ const sendPostToChats = async (req, res) => {
       success: true,
       message: "Post shared successfully ✅",
     });
-
   } catch (err) {
     console.error("Share error:", err);
     res.status(500).json({
@@ -1534,36 +1541,29 @@ const sendPostToChats = async (req, res) => {
   }
 };
 
-
 const getDistrictMessages = async (req, res) => {
   try {
     const { district } = req.params;
 
-    const messages = await Message.find({ district })
-      .sort({ createdAt: 1 });
-      console.log(messages);
-      
+    const messages = await Message.find({ district }).sort({ createdAt: 1 });
+    console.log(messages);
 
     const updatedMessages = await Promise.all(
       messages.map(async (msg) => {
-
         if (msg.post) {
-
           const postOwner = await userModel.findOne({
             "post._id": msg.post,
           });
           console.log(postOwner);
-          
 
           if (postOwner) {
-
             const fullPost = postOwner.post.id(msg.post);
 
             return {
               ...msg._doc,
               post: {
                 _id: fullPost._id,
-                image: fullPost.image,   // ✅ IMAGE LINK
+                image: fullPost.image, // ✅ IMAGE LINK
                 caption: fullPost.caption,
                 likes: fullPost.likes,
               },
@@ -1577,18 +1577,15 @@ const getDistrictMessages = async (req, res) => {
         }
 
         return msg;
-      })
+      }),
     );
 
     res.json({ success: true, messages: updatedMessages });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false });
   }
 };
-
-
 
 const unconnect = async (req, res) => {
   try {
@@ -1599,14 +1596,24 @@ const unconnect = async (req, res) => {
     const targetUser = await userModel.findOne({ username });
 
     if (!targetUser)
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
     // Remove each other from connected and connecting arrays
-    currentUser.connected = currentUser.connected.filter(c => c.username !== username);
-    currentUser.connecting = currentUser.connecting.filter(c => c.username !== username);
+    currentUser.connected = currentUser.connected.filter(
+      (c) => c.username !== username,
+    );
+    currentUser.connecting = currentUser.connecting.filter(
+      (c) => c.username !== username,
+    );
 
-    targetUser.connected = targetUser.connected.filter(c => c.username !== currentUser.username);
-    targetUser.connecting = targetUser.connecting.filter(c => c.username !== currentUser.username);
+    targetUser.connected = targetUser.connected.filter(
+      (c) => c.username !== currentUser.username,
+    );
+    targetUser.connecting = targetUser.connecting.filter(
+      (c) => c.username !== currentUser.username,
+    );
 
     await currentUser.save();
     await targetUser.save();
@@ -1617,6 +1624,8 @@ const unconnect = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
 const connectionStatus = async (req, res) => {
   try {
     const email = req.user.email;
@@ -1625,21 +1634,21 @@ const connectionStatus = async (req, res) => {
     const currentUser = await userModel.findOne({ email });
 
     if (!currentUser) {
-      return res.status(404).json({ status: "none" });
+      return res.json({ status: "none" });
     }
 
-    // ✅ check connected
-    const isConnected = currentUser.connected.some(
-      (u) => u.username === username
+    // ✅ Check CONNECTED list
+    const isConnected = currentUser.connected?.some(
+      (user) => user.username === username
     );
 
     if (isConnected) {
       return res.json({ status: "connected" });
     }
 
-    // ✅ check request sent
-    const isRequested = currentUser.connecting.some(
-      (u) => u.username === username
+    // ✅ Check CONNECTING (sent requests)
+    const isRequested = currentUser.connecting?.some(
+      (user) => user.username === username
     );
 
     if (isRequested) {
@@ -1654,8 +1663,6 @@ const connectionStatus = async (req, res) => {
   }
 };
 
-
-
 const getConnections = async (req, res) => {
   try {
     const email = req.user.email;
@@ -1664,14 +1671,17 @@ const getConnections = async (req, res) => {
     const user = await userModel.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     let list = [];
 
     if (type === "connected") list = user.connected || [];
     else if (type === "connecting") list = user.connecting || [];
-    else return res.status(400).json({ success: false, message: "Invalid type" });
+    else
+      return res.status(400).json({ success: false, message: "Invalid type" });
 
     res.json({ success: true, type, users: list });
   } catch (error) {
@@ -1680,6 +1690,55 @@ const getConnections = async (req, res) => {
   }
 };
 
+const removeConnection = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const { username } = req.body;
+
+    const currentUser = await userModel.findOne({ email });
+    const targetUser = await userModel.findOne({ username });
+
+    if (!currentUser || !targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // ✅ Remove from current user
+    currentUser.connected = currentUser.connected.filter(
+      (u) => u.username !== username
+    );
+
+    currentUser.connecting = currentUser.connecting.filter(
+      (u) => u.username !== username
+    );
+
+    // ✅ Remove from target user also
+    targetUser.connected = targetUser.connected.filter(
+      (u) => u.username !== currentUser.username
+    );
+
+    targetUser.connecting = targetUser.connecting.filter(
+      (u) => u.username !== currentUser.username
+    );
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.json({
+      success: true,
+      message: "Connection removed successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
 
 export {
   sendotp,
@@ -1730,13 +1789,11 @@ export {
   unsavePost,
   deleteComment,
   getSavedPosts,
-
- connectionStatus,
- unconnect,
-getConnections,
-
+  connectionStatus,
+  unconnect,
+  getConnections,
   getDistrictMessages,
+  checkconnecting,
+removeConnection,
 
-
-
-}; 
+};
