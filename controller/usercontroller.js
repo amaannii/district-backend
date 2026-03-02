@@ -96,7 +96,7 @@ const verifyotp = async (req, res) => {
       message: error.message,
     });
   }
-};
+}; 
 
 const signup = async (req, res) => {
   try {
@@ -152,10 +152,10 @@ const deleteotp = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log(email, password);
+
 
     const user = await userModel.findOne({ email });
-    console.log(user);
+
 
     if (!user) {
       return res
@@ -371,7 +371,7 @@ const completeProfile = async (req, res) => {
 
 const userdetails = async (req, res) => {
   // Access stored data from middleware
-  console.log(req.user);
+
 
   const user = await userModel.findOne({ email: req.user.email });
 
@@ -384,15 +384,14 @@ const userdetails = async (req, res) => {
 const upload = async (req, res) => {
   const { img } = req.body;
   const { email, role } = req.user;
-  console.log(img);
-  console.log(email);
+
 
   const users = await userModel.updateOne(
     { email: email },
     { $set: { img: img } },
     { upsert: true },
   );
-  console.log(users);
+
 
   if (users) {
     res.status(200).json({
@@ -596,9 +595,6 @@ const confirmnotification = async (req, res) => {
   try {
     const { username } = req.body;
     const email = req.user.email;
-
-    console.log(username);
-    console.log(email);
 
     // get request array
     const data = await userModel.findOne({ email }, { request: 1, _id: 0 });
@@ -1178,10 +1174,10 @@ const addContactNumber = async (req, res) => {
 const getContacts = async (req, res) => {
   try {
     const email = req.user.email;
-    console.log(email);
+ 
 
     const user = await userModel.findOne({ email });
-    console.log(user);
+  
 
     res.json({
       contacts: user.contacts,
@@ -1295,7 +1291,6 @@ const updateName = async (req, res) => {
 const savePost = async (req, res) => {
   const { postId, username } = req.body;
   const user = await userModel.findOne({ email: req.user.email });
-  console.log(postId, username);
 
   if (!user)
     return res.status(404).json({ success: false, message: "User not found" });
@@ -1325,7 +1320,7 @@ const savePost = async (req, res) => {
         },
       },
     );
-    console.log(user1);
+ 
   }
 
   res.json({ success: true, saved: "saved successfully" }); // returns new status
@@ -1546,7 +1541,7 @@ const getDistrictMessages = async (req, res) => {
     const { district } = req.params;
 
     const messages = await Message.find({ district }).sort({ createdAt: 1 });
-    console.log(messages);
+  
 
     const updatedMessages = await Promise.all(
       messages.map(async (msg) => {
@@ -1554,7 +1549,7 @@ const getDistrictMessages = async (req, res) => {
           const postOwner = await userModel.findOne({
             "post._id": msg.post,
           });
-          console.log(postOwner);
+         
 
           if (postOwner) {
             const fullPost = postOwner.post.id(msg.post);
