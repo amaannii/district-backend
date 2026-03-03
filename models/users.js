@@ -148,7 +148,7 @@ connecting: {
 
     commentsPermission: {
       type: String,
-      enum: ["followers", "followback", "off"],
+      enum: ["followers", "followback", "off","all"],
       default: "all",
     },
     contacts: {

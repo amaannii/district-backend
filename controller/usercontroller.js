@@ -786,6 +786,15 @@ const addComment = async (req, res) => {
     post.comments.push(newComment);
     await postOwner.save();
 
+    await Message.updateOne(
+  { post: postId }, // find message that contains this post
+  {
+    $push: {
+      "post.comments": newComment,
+    },
+  }
+);
+
     res.json({ success: true, comment: newComment });
   } catch (err) {
     console.error(err);
@@ -1560,6 +1569,7 @@ const getDistrictMessages = async (req, res) => {
                 _id: fullPost._id,
                 image: fullPost.image, // ✅ IMAGE LINK
                 caption: fullPost.caption,
+                comments:fullPost.comments,
                 likes: fullPost.likes,
               },
               postOwner: {
