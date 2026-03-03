@@ -1745,6 +1745,62 @@ const removeConnection = async (req, res) => {
   }
 };
 
+
+const deleteNote = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    await userModel.updateOne(
+      { email },
+      {
+        $set: {
+          note: "",
+          noteCreatedAt: null,
+        },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Note deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+const seleccteduser = async (req, res) => {
+  try {
+    // Correctly get username from query parameters
+    const { username } = req.body; // not req.query.username
+
+    console.log("Requested username:", username);
+
+    if (!username) {
+      return res.status(400).json({ success: false, message: "Username is required" });
+    }
+
+    // Assuming userModel is your Mongoose model
+    const user = await userModel.findOne({ username:username});
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+
+
+
+
 export {
   sendotp,
   verifyotp,
@@ -1800,5 +1856,7 @@ export {
   getDistrictMessages,
   checkconnecting,
 removeConnection,
+deleteNote,
+seleccteduser
 
 };
