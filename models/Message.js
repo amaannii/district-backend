@@ -26,10 +26,7 @@ const messageSchema = new mongoose.Schema(
     },
 
     // 🔥 When sharing a post
-    post: {
-      type: mongoose.Schema.Types.ObjectId,
-      default: null,
-    },
+    post: Object,
 
     // 🔥 VERY IMPORTANT (needed for username + profile image)
     postOwner: {

@@ -25,7 +25,7 @@ app.use(
   cors({
     origin: "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
 
 /* ================= ROUTES ================= */
@@ -53,21 +53,22 @@ io.on("connection", (socket) => {
   });
 
   // 🔥 SHARE POST TO DISTRICT
-socket.on("sharePost", async ({ district, postId, sender }) => {
-  try {
-    const newMessage = await Message.create({
-      district,
-      sender,
-      type: "post",
-      post: postId,
-    });
+  socket.on("sharePost", async ({ district, postId, sender }) => {
+    try {
+      const newMessage = await Message.create({
+        district,
+        sender,
+        type: "post",
+        post: postId,
+      });
 
-    io.to(district).emit("receiveMessage", newMessage);
+      io.to(district).emit("receiveMessage", newMessage);
+    } catch (error) {
+      console.error("Error sharing post:", error.message);
+    }
+  });
 
-  } catch (error) {
-    console.error("Error sharing post:", error.message);
-  }
-});
+  
 
   // 🔥 SAVE MESSAGE + EMIT
   socket.on("sendMessage", async ({ district, message, sender }) => {
@@ -81,7 +82,6 @@ socket.on("sharePost", async ({ district, postId, sender }) => {
 
       // 2️⃣ Send to all users in that district
       io.to(district).emit("receiveMessage", newMessage);
-
     } catch (error) {
       console.error("Error saving message:", error.message);
     }
@@ -90,9 +90,7 @@ socket.on("sharePost", async ({ district, postId, sender }) => {
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
-
 });
-
 
 /* ================= START SERVER ================= */
 
