@@ -146,11 +146,11 @@ connecting: {
       default: "",
     },
 
-    commentsPermission: {
-      type: String,
-      enum: ["followers", "followback", "off"],
-      default: "all",
-    },
+   commentsPermission: {
+  type: String,
+  enum: ["all", "followers", "followback", "off"],
+  default: "all",
+},
     contacts: {
       type: [String],
       default: [],

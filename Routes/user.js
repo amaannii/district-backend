@@ -16,6 +16,7 @@ import {
   deleteContact,
   // connectionStatus,
   deletedimg,
+  deleteNote,
   deleteNotification,
   deleteotp,
   deletePost,
@@ -40,6 +41,7 @@ import {
   request,
   resetpassword,
   savePost,
+  seleccteduser,
   sendotp,
   sendPostToChats,
   signup,
@@ -125,5 +127,13 @@ userrouter.post("/checkconnecting", authMiddleware, checkconnecting);
 userrouter.get( "/connection-status/:username", authMiddleware, connectionStatus,);
 userrouter.get("/:type", authMiddleware, getConnections);
 userrouter.post("/remove-connection", authMiddleware, removeConnection);
+userrouter.delete("/note", authMiddleware, deleteNote);
+userrouter.post("/selecteduser", authMiddleware, seleccteduser )
+
+
+
+
+// userrouter.get("/connections/:type", authMiddleware, getConnections);
+
 
 export default userrouter;
