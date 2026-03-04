@@ -1299,40 +1299,39 @@ const updateName = async (req, res) => {
 // POST /user/save-post
 const savePost = async (req, res) => {
   const { postId, username } = req.body;
+
   const user = await userModel.findOne({ email: req.user.email });
 
-  if (!user)
+  if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
-
-  // const alreadySaved = user.savedPosts.some(
-  //   (p) => p.postId.toString() === postId
-  // );
-
-  // if (alreadySaved) {
-  //   user.savedPosts = user.savedPosts.filter((p) => p.postId.toString() !== postId);
-  // } else {
-  if (user.savedPosts) {
-    await userModel.updateOne(
-      { email: req.user.email },
-      {
-        $push: {
-          savedPosts: { postId, savedAt: new Date(), username: username },
-        },
-      },
-    );
-  } else {
-    const user1 = await userModel.updateOne(
-      { email: req.user.email },
-      {
-        $set: {
-          savedPosts: [{ postId, savedAt: new Date(), username: username }],
-        },
-      },
-    );
- 
   }
 
-  res.json({ success: true, saved: "saved successfully" }); // returns new status
+  // Check if already saved
+  const alreadySaved = user.savedPosts?.some(
+    (p) => p.postId.toString() === postId
+  );
+
+  if (alreadySaved) {
+    // 🔥 UNSAVE
+    user.savedPosts = user.savedPosts.filter(
+      (p) => p.postId.toString() !== postId
+    );
+
+    await user.save();
+
+    return res.json({ success: true, saved: false });
+  } else {
+    // 🔥 SAVE
+    user.savedPosts.push({
+      postId,
+      savedAt: new Date(),
+      username,
+    });
+
+    await user.save();
+
+    return res.json({ success: true, saved: true });
+  }
 };
 
 const getSavedPosts = async (req, res) => {
