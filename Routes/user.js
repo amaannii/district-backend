@@ -7,6 +7,7 @@ import {
   allusers,
   changePassword,
   checkconnecting,
+  checkisliked,
   // cancelRequest,
   completeProfile,
   confirmnotification,
@@ -89,6 +90,7 @@ userrouter.post("/confirmnotification", authMiddleware, confirmnotification);
 userrouter.get("/feed", authMiddleware, getFeedPosts);
 userrouter.get("/image", authMiddleware, getimage);
 userrouter.post("/like-post", authMiddleware, likePost);
+userrouter.post("/checkisliked", authMiddleware, checkisliked);
 userrouter.post("/add-comment", authMiddleware, addComment);
 userrouter.post("/delete-comment", authMiddleware, deleteComment);
 userrouter.get("/notes", authMiddleware, notes);
