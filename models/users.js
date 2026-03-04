@@ -80,14 +80,14 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
-    request: [
-      {
-        username: String,
-        name: String,
-        img: String,
-        Date: Date,
-      },
-    ],
+    // request: [
+    //   {
+    //     username: String,
+    //     name: String,
+    //     img: String,
+    //     Date: Date,
+    //   },
+    // ],
             
 savedPosts: [
   {
