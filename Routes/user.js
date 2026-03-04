@@ -28,6 +28,7 @@ import {
   getimage,
   getProfile,
   getSavedPosts,
+  getSinglePost,
   getUserSettings,
   googlelogin,
   likePost,
@@ -129,6 +130,7 @@ userrouter.get("/:type", authMiddleware, getConnections);
 userrouter.post("/remove-connection", authMiddleware, removeConnection);
 userrouter.delete("/note", authMiddleware, deleteNote);
 userrouter.post("/selecteduser", authMiddleware, seleccteduser )
+userrouter.get("/post/:postId", authMiddleware, getSinglePost);
 
 
 

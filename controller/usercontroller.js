@@ -1799,6 +1799,70 @@ const seleccteduser = async (req, res) => {
 
 
 
+const getSinglePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const currentUserId = req.user.id;
+
+    // 🔎 Find user who owns this post
+    const postOwner = await userModel.findOne({
+      "post._id": postId,
+    });
+
+    if (!postOwner) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const post = postOwner.post.id(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    // ✅ Check if liked
+    const isLiked = post.likedBy?.some(
+      (id) => id.toString() === currentUserId
+    );
+
+    // ✅ Check if saved
+    const currentUser = await userModel.findById(currentUserId);
+    const isSaved = currentUser.savedPosts?.some(
+      (p) => p.postId.toString() === postId
+    );
+
+    res.json({
+      success: true,
+      post: {
+        _id: post._id,
+        image: post.image,
+        caption: post.caption,
+        createdAt: post.createdAt,
+        likes: post.likes || 0,
+        comments: post.comments || [],
+        isLiked: !!isLiked,
+        isSaved: !!isSaved,
+        userId: {
+          _id: postOwner._id,
+          username: postOwner.username,
+          img: postOwner.img,
+        },
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 
 
 export {
@@ -1857,6 +1921,7 @@ export {
   checkconnecting,
 removeConnection,
 deleteNote,
-seleccteduser
+seleccteduser,
+getSinglePost
 
 };
