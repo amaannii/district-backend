@@ -34,6 +34,12 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    likes:{
+      type:Number
+    },
+    islikes:{
+      type:Number
+    }
   },
   { timestamps: true }
 );
