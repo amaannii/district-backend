@@ -96,7 +96,7 @@ const verifyotp = async (req, res) => {
       message: error.message,
     });
   }
-};
+}; 
 
 const signup = async (req, res) => {
   try {
@@ -153,7 +153,9 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+
     const user = await userModel.findOne({ email });
+
 
     if (!user) {
       return res
@@ -370,6 +372,7 @@ const completeProfile = async (req, res) => {
 const userdetails = async (req, res) => {
   // Access stored data from middleware
 
+
   const user = await userModel.findOne({ email: req.user.email });
 
   res.json({
@@ -382,11 +385,13 @@ const upload = async (req, res) => {
   const { img } = req.body;
   const { email, role } = req.user;
 
+
   const users = await userModel.updateOne(
     { email: email },
     { $set: { img: img } },
     { upsert: true },
   );
+
 
   if (users) {
     res.status(200).json({
@@ -440,6 +445,7 @@ const explorePosts = async (req, res) => {
     users.forEach((user) => {
       user.post.forEach((p) => {
         allPosts.push({
+          _id: p._id,   
           image: p.image,
           caption: p.caption,
           createdAt: p.createdAt,
@@ -744,62 +750,11 @@ const likePost = async (req, res) => {
     }
 
     await postOwner.save();
-    await Message.updateMany(
-  { type: "post", post: postId },
-  {
-    $set: {
-      likes: post.likes,
-      isliked:!liked,
-    },
-  }
-);
 
     res.json({ success: true, likes: post.likes, isLiked: !liked });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-const checkisliked = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { postId } = req.body;
-
-    const postOwner = await userModel.findOne({ "post._id": postId });
-
-    if (!postOwner) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
-      });
-    }
-
-    const post = postOwner.post.id(postId);
-
-    if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
-      });
-    }
-
-    // 🔥 Check if userId exists inside likedBy array
-    const isLiked = (post.likedBy || []).some(
-      (id) => id.toString() === userId.toString()
-    );
-
-    res.json({
-      success: true,
-      isLiked,        // true or false
-      likes: post.likes || 0,
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
   }
 };
 
@@ -833,13 +788,13 @@ const addComment = async (req, res) => {
     await postOwner.save();
 
     await Message.updateOne(
-      { post: postId }, // find message that contains this post
-      {
-        $push: {
-          "post.comments": newComment,
-        },
-      },
-    );
+  { post: postId }, // find message that contains this post
+  {
+    $push: {
+      "post.comments": newComment,
+    },
+  }
+);
 
     res.json({ success: true, comment: newComment });
   } catch (err) {
@@ -1229,8 +1184,10 @@ const addContactNumber = async (req, res) => {
 const getContacts = async (req, res) => {
   try {
     const email = req.user.email;
+ 
 
     const user = await userModel.findOne({ email });
+  
 
     res.json({
       contacts: user.contacts,
@@ -1343,41 +1300,40 @@ const updateName = async (req, res) => {
 // POST /user/save-post
 const savePost = async (req, res) => {
   const { postId, username } = req.body;
-
   const user = await userModel.findOne({ email: req.user.email });
 
-  if (!user) {
+  if (!user)
     return res.status(404).json({ success: false, message: "User not found" });
-  }
 
-  // Check if already saved
-  const alreadySaved = user.savedPosts?.some(
-    (p) => p.postId.toString() === postId
-  );
+  // const alreadySaved = user.savedPosts.some(
+  //   (p) => p.postId.toString() === postId
+  // );
 
-  if (alreadySaved) {
-    // 🔥 UNSAVE
-    user.savedPosts = user.savedPosts.filter(
-      (p) => p.postId.toString() !== postId
+  // if (alreadySaved) {
+  //   user.savedPosts = user.savedPosts.filter((p) => p.postId.toString() !== postId);
+  // } else {
+  if (user.savedPosts) {
+    await userModel.updateOne(
+      { email: req.user.email },
+      {
+        $push: {
+          savedPosts: { postId, savedAt: new Date(), username: username },
+        },
+      },
     );
-
-    await user.save();
-
-    return res.json({ success: true, saved: false });
   } else {
-
-    // 🔥 SAVE
-    user.savedPosts.push({
-      postId,
-      savedAt: new Date(),
-      username,
-    });
-
-
-    await user.save();
-
-    return res.json({ success: true, saved: true });
+    const user1 = await userModel.updateOne(
+      { email: req.user.email },
+      {
+        $set: {
+          savedPosts: [{ postId, savedAt: new Date(), username: username }],
+        },
+      },
+    );
+ 
   }
+
+  res.json({ success: true, saved: "saved successfully" }); // returns new status
 };
 
 const getSavedPosts = async (req, res) => {
@@ -1573,8 +1529,6 @@ const sendPostToChats = async (req, res) => {
         sender: sender.username,
         type: "post",
         post: post._id,
-        like:post.likes,
-        isLiked:post.isLiked,
         postOwner: postOwner._id, // VERY IMPORTANT
       });
     }
@@ -1597,6 +1551,7 @@ const getDistrictMessages = async (req, res) => {
     const { district } = req.params;
 
     const messages = await Message.find({ district }).sort({ createdAt: 1 });
+  
 
     const updatedMessages = await Promise.all(
       messages.map(async (msg) => {
@@ -1604,6 +1559,7 @@ const getDistrictMessages = async (req, res) => {
           const postOwner = await userModel.findOne({
             "post._id": msg.post,
           });
+         
 
           if (postOwner) {
             const fullPost = postOwner.post.id(msg.post);
@@ -1614,7 +1570,7 @@ const getDistrictMessages = async (req, res) => {
                 _id: fullPost._id,
                 image: fullPost.image, // ✅ IMAGE LINK
                 caption: fullPost.caption,
-                comments: fullPost.comments,
+                comments:fullPost.comments,
                 likes: fullPost.likes,
               },
               postOwner: {
@@ -1675,6 +1631,7 @@ const unconnect = async (req, res) => {
   }
 };
 
+
 const connectionStatus = async (req, res) => {
   try {
     const email = req.user.email;
@@ -1688,7 +1645,7 @@ const connectionStatus = async (req, res) => {
 
     // ✅ Check CONNECTED list
     const isConnected = currentUser.connected?.some(
-      (user) => user.username === username,
+      (user) => user.username === username
     );
 
     if (isConnected) {
@@ -1697,7 +1654,7 @@ const connectionStatus = async (req, res) => {
 
     // ✅ Check CONNECTING (sent requests)
     const isRequested = currentUser.connecting?.some(
-      (user) => user.username === username,
+      (user) => user.username === username
     );
 
     if (isRequested) {
@@ -1705,6 +1662,7 @@ const connectionStatus = async (req, res) => {
     }
 
     return res.json({ status: "none" });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ status: "none" });
@@ -1755,20 +1713,20 @@ const removeConnection = async (req, res) => {
 
     // ✅ Remove from current user
     currentUser.connected = currentUser.connected.filter(
-      (u) => u.username !== username,
+      (u) => u.username !== username
     );
 
     currentUser.connecting = currentUser.connecting.filter(
-      (u) => u.username !== username,
+      (u) => u.username !== username
     );
 
     // ✅ Remove from target user also
     targetUser.connected = targetUser.connected.filter(
-      (u) => u.username !== currentUser.username,
+      (u) => u.username !== currentUser.username
     );
 
     targetUser.connecting = targetUser.connecting.filter(
-      (u) => u.username !== currentUser.username,
+      (u) => u.username !== currentUser.username
     );
 
     await currentUser.save();
@@ -1778,6 +1736,7 @@ const removeConnection = async (req, res) => {
       success: true,
       message: "Connection removed successfully",
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -1786,6 +1745,7 @@ const removeConnection = async (req, res) => {
     });
   }
 };
+
 
 const deleteNote = async (req, res) => {
   try {
@@ -1798,7 +1758,7 @@ const deleteNote = async (req, res) => {
           note: "",
           noteCreatedAt: null,
         },
-      },
+      }
     );
 
     res.status(200).json({
@@ -1820,18 +1780,14 @@ const seleccteduser = async (req, res) => {
     console.log("Requested username:", username);
 
     if (!username) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Username is required" });
+      return res.status(400).json({ success: false, message: "Username is required" });
     }
 
     // Assuming userModel is your Mongoose model
-    const user = await userModel.findOne({ username: username });
+    const user = await userModel.findOne({ username:username});
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     res.json({ success: true, user });
@@ -1840,6 +1796,9 @@ const seleccteduser = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+
 
 const getSinglePost = async (req, res) => {
   try {
@@ -1868,12 +1827,14 @@ const getSinglePost = async (req, res) => {
     }
 
     // ✅ Check if liked
-    const isLiked = post.likedBy?.some((id) => id.toString() === currentUserId);
+    const isLiked = post.likedBy?.some(
+      (id) => id.toString() === currentUserId
+    );
 
     // ✅ Check if saved
     const currentUser = await userModel.findById(currentUserId);
     const isSaved = currentUser.savedPosts?.some(
-      (p) => p.postId.toString() === postId,
+      (p) => p.postId.toString() === postId
     );
 
     res.json({
@@ -1896,6 +1857,49 @@ const getSinglePost = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+const checkisliked = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { postId } = req.body;
+
+    const postOwner = await userModel.findOne({ "post._id": postId });
+
+    if (!postOwner) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    const post = postOwner.post.id(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    // 🔥 Check if userId exists inside likedBy array
+    const isLiked = (post.likedBy || []).some(
+      (id) => id.toString() === userId.toString()
+    );
+
+    res.json({
+      success: true,
+      isLiked,        // true or false
+      likes: post.likes || 0,
+    });
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -1957,9 +1961,12 @@ export {
   getConnections,
   getDistrictMessages,
   checkconnecting,
-  removeConnection,
-  deleteNote,
-  seleccteduser,
-  getSinglePost,
-  checkisliked
+removeConnection,
+deleteNote,
+seleccteduser,
+getSinglePost,
+checkisliked
+
+
+
 };
