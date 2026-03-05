@@ -657,15 +657,26 @@ const getFeedPosts = async (req, res) => {
   try {
     const currentUserId = req.user.id;
 
+    const currentUser = await userModel.findById(currentUserId);
+
     const users = await userModel.find(
       { "post.0": { $exists: true } },
-      { username: 1, img: 1, post: 1 },
+      { username: 1, img: 1, post: 1 }
     );
 
     let feedPosts = [];
 
     users.forEach((u) => {
       u.post.forEach((p) => {
+
+        const isLiked = p.likedBy?.some(
+          (id) => id.toString() === currentUserId
+        );
+
+        const isSaved = currentUser.savedPosts?.some(
+          (saved) => saved.postId.toString() === p._id.toString()
+        );
+
         feedPosts.push({
           _id: p._id,
           image: p.image,
@@ -673,7 +684,8 @@ const getFeedPosts = async (req, res) => {
           createdAt: p.createdAt,
           likes: p.likes || 0,
           comments: p.comments || [],
-          isLiked: p.likedBy?.some((id) => id.toString() === currentUserId),
+          isLiked: !!isLiked,
+          isSaved: !!isSaved, 
           userId: {
             _id: u._id,
             username: u.username,
@@ -1288,33 +1300,45 @@ const updateName = async (req, res) => {
 
 
 const savePost = async (req, res) => {
-  const { postId, username } = req.body;
-  const user = await userModel.findOne({ email: req.user.email });
 
-  if (!user)
-    return res.status(404).json({ success: false, message: "User not found" });
-  if (user.savedPosts) {
-    await userModel.updateOne(
-      { email: req.user.email },
-      {
-        $push: {
-          savedPosts: { postId, savedAt: new Date(), username: username },
-        },
-      },
+  try {
+    const { postId, username } = req.body;
+    const user = await userModel.findOne({ email: req.user.email });
+
+    if (!user)
+      return res.status(404).json({ success: false });
+
+    const alreadySaved = user.savedPosts?.some(
+      (p) => p.postId.toString() === postId
     );
-  } else {
-    const user1 = await userModel.updateOne(
-      { email: req.user.email },
-      {
-        $set: {
-          savedPosts: [{ postId, savedAt: new Date(), username: username }],
-        },
-      },
-    );
+
+
+    if (alreadySaved) {
+      // 🔴 UNSAVE
+      user.savedPosts = user.savedPosts.filter(
+        (p) => p.postId.toString() !== postId
+      );
+      await user.save();
+
+      return res.json({ success: true, isSaved: false });
+    } else {
+      // 🟢 SAVE
+      user.savedPosts.push({
+        postId,
+        username,
+        savedAt: new Date(),
+      });
+
+      await user.save();
+
+      return res.json({ success: true, isSaved: true });
+    }
+
+  } catch (error) {
+    res.status(500).json({ success: false });
   }
-
-  res.json({ success: true, saved: "saved successfully" }); // returns new status
 };
+
 
 const getSavedPosts = async (req, res) => {
   try {
