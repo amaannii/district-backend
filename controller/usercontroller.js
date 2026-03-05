@@ -1300,42 +1300,61 @@ const updateName = async (req, res) => {
 
 
 const savePost = async (req, res) => {
-
   try {
     const { postId, username } = req.body;
+
+    if (!postId) {
+      return res.status(400).json({
+        success: false,
+        message: "postId is required",
+      });
+    }
+
     const user = await userModel.findOne({ email: req.user.email });
 
-    if (!user)
-      return res.status(404).json({ success: false });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
 
-    const alreadySaved = user.savedPosts?.some(
+    if (!user.savedPosts) {
+      user.savedPosts = [];
+    }
+
+    const alreadySaved = user.savedPosts.some(
       (p) => p.postId.toString() === postId
     );
 
-
     if (alreadySaved) {
-      // 🔴 UNSAVE
       user.savedPosts = user.savedPosts.filter(
         (p) => p.postId.toString() !== postId
       );
+
       await user.save();
 
-      return res.json({ success: true, isSaved: false });
-    } else {
-      // 🟢 SAVE
-      user.savedPosts.push({
-        postId,
-        username,
-        savedAt: new Date(),
+      return res.json({
+        success: true,
+        isSaved: false,
+        message: "Post removed from saved",
       });
-
-      await user.save();
-
-      return res.json({ success: true, isSaved: true });
     }
 
+    user.savedPosts.push({
+      postId,
+      username,
+      savedAt: new Date(),
+    });
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      isSaved: true,
+      message: "Post saved successfully",
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false });
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
