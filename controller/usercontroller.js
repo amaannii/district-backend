@@ -461,18 +461,28 @@ const explorePosts = async (req, res) => {
 };
 
 const allusers = async (req, res) => {
-  const { email } = req.user; 
+  const { email } = req.user;
 
   try {
     const users = await userModel.find(
-      { email: { $ne: email } }, // ✅ correct way
-      { password: 0, email: 0 }  // projection
+      { email: { $ne: email } },
+      {
+        password: 0,
+        email: 0,
+      }
     );
 
-    if (users.length > 0) {
+    const formattedUsers = users.map((user) => ({
+      ...user._doc,
+      bio: user.bio,
+      connectedCount: user.connected ? user.connected.length : 0,
+      connectingCount: user.connecting ? user.connecting.length : 0,
+    }));
+
+    if (formattedUsers.length > 0) {
       return res.json({
         success: true,
-        users,
+        users: formattedUsers,
       });
     } else {
       return res.json({
@@ -487,6 +497,7 @@ const allusers = async (req, res) => {
     });
   }
 };
+
 const checkconnecting = async (req, res) => {
   try {
     const { username } = req.body;
