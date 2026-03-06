@@ -1374,21 +1374,25 @@ const getSavedPosts = async (req, res) => {
 
     let allSavedPosts = [];
 
-    for (let saved of currentUser.savedPosts) {
-      // Find the user who owns this post
-      const postOwner = await userModel.findOne({
-        username: saved.username,
-        "post._id": saved.postId,
-      });
+    for (const saved of currentUser.savedPosts) {
+
+      let postOwner;
+
+      // If the saved post belongs to current user
+      if (saved.username === currentUser.username) {
+        postOwner = currentUser;
+      } else {
+        postOwner = await userModel.findOne({ username: saved.username });
+      }
 
       if (!postOwner) continue;
 
-      // Find the specific post inside their post array
-      const postData = postOwner.post.id(saved.postId);
+      const postData = postOwner.post.find(
+        (p) => p._id.toString() === saved.postId.toString()
+      );
 
       if (!postData) continue;
 
-      // Push combined data
       allSavedPosts.push({
         ...postData._doc,
         postOwner: {
@@ -1401,6 +1405,7 @@ const getSavedPosts = async (req, res) => {
     }
 
     res.status(200).json(allSavedPosts);
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
