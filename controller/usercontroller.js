@@ -461,22 +461,27 @@ const explorePosts = async (req, res) => {
 };
 
 const allusers = async (req, res) => {
+  const { email } = req.user; 
+
   try {
-    const users = await userModel.find({}, { password: 0, email: 0 });
+    const users = await userModel.find(
+      { email: { $ne: email } }, // ✅ correct way
+      { password: 0, email: 0 }  // projection
+    );
 
     if (users.length > 0) {
-      res.json({
+      return res.json({
         success: true,
-        users: users,
+        users,
       });
     } else {
-      res.json({
+      return res.json({
         success: false,
         message: "No users found",
       });
     }
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });

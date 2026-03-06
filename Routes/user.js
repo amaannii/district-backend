@@ -82,7 +82,7 @@ userrouter.post("/userdetails", authMiddleware, userdetails);
 userrouter.post("/upload", authMiddleware, upload);
 userrouter.post("/posting", authMiddleware, posting);
 userrouter.get("/posts/explore", explorePosts);
-userrouter.get("/allusers", allusers);
+userrouter.get("/allusers",authMiddleware, allusers);
 userrouter.post("/request", authMiddleware, request);
 userrouter.get("/notifications", authMiddleware, notifications);
 userrouter.post("/notificationdelete", authMiddleware, notificationdelete);

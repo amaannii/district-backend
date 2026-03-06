@@ -23,6 +23,8 @@ const authMiddleware = (req, res, next) => {
       email: decoded.email,
       role: decoded.role,
     };
+    console.log(req.user);
+    
 
     next(); // allow request to continue
   } catch (error) {
