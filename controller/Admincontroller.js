@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv"
 import userModel from "../models/users.js";
 import ActivityLog from "../models/ActivityLog.js";
+import Message from "../models/Message.js";
+
 
 dotenv.config()
 
@@ -179,7 +181,19 @@ export const dismissReport = async (req, res) => {
   res.json({ success: true });
 };
 
+export const deleted = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    await Message.findByIdAndDelete(id);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false });
+  }
+};
 
 
 
