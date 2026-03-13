@@ -196,6 +196,56 @@ export const deleted = async (req, res) => {
 };
 
 
+ const logout = async (req, res) => {
+  try {
+
+    const user = req.user; // from auth middleware
+    console.log(user);
+    
+
+    await ActivityLog.create({
+      userName: "Admin",
+      email: user.email,
+      role: "Admin",
+      action: "LOGOUT",
+      log: "Admin Logged Out",
+      description: `Admin logged out of the system`,
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Logout failed",
+    });
+  }
+};
+
+
+const getUserLogs = async (req, res) => {
+  try {
+
+    const logs = await ActivityLog.find({
+      action: { $in: ["LOGIN", "LOGOUT"] }
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      logs
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch logs" });
+  }
+};
 
 
 
@@ -204,4 +254,7 @@ export{
     toggleBlockUser,
     getAllUsers,
     saveLoginLog,
+    logout,
+    getUserLogs
+
 }

@@ -1,5 +1,6 @@
 import express from "express"
-import { adminlogin, blockUser, deleted, dismissReport, getAdmins, getAllMessages, getAllUsers, getLoginLogs,  getReports,  toggleBlockUser } from "../controller/Admincontroller.js"
+import { adminlogin, blockUser, deleted, dismissReport, getAdmins, getAllMessages, getAllUsers, getLoginLogs,  getReports,  logout,  toggleBlockUser } from "../controller/Admincontroller.js"
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const adminrouter=express()
 
@@ -14,6 +15,7 @@ adminrouter.get("/reports", getReports);
 adminrouter.patch("/reports/:id/block", blockUser);   
 adminrouter.patch("/reports/:id/dismiss", dismissReport); 
 adminrouter.delete("/delete-message/:id", deleted)
+adminrouter.post("/logout",authMiddleware, logout)
 
 
 

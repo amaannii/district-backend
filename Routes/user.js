@@ -34,6 +34,7 @@ import {
   googlelogin,
   likePost,
   login,
+  logoutUser,
   note,
   notes,
   notificationdelete,
@@ -133,6 +134,7 @@ userrouter.post("/remove-connection", authMiddleware, removeConnection);
 userrouter.delete("/note", authMiddleware, deleteNote);
 userrouter.post("/selecteduser", authMiddleware, seleccteduser )
 userrouter.get("/post/:postId", authMiddleware, getSinglePost);
+userrouter.post("/logout", authMiddleware, logoutUser);
 
 
 

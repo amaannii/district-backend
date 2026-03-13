@@ -469,7 +469,7 @@ const allusers = async (req, res) => {
       {
         password: 0,
         email: 0,
-      }
+      },
     );
 
     const formattedUsers = users.map((user) => ({
@@ -677,20 +677,19 @@ const getFeedPosts = async (req, res) => {
 
     const users = await userModel.find(
       { "post.0": { $exists: true } },
-      { username: 1, img: 1, post: 1 }
+      { username: 1, img: 1, post: 1 },
     );
 
     let feedPosts = [];
 
     users.forEach((u) => {
       u.post.forEach((p) => {
-
         const isLiked = p.likedBy?.some(
-          (id) => id.toString() === currentUserId
+          (id) => id.toString() === currentUserId,
         );
 
         const isSaved = currentUser.savedPosts?.some(
-          (saved) => saved.postId.toString() === p._id.toString()
+          (saved) => saved.postId.toString() === p._id.toString(),
         );
 
         feedPosts.push({
@@ -701,7 +700,7 @@ const getFeedPosts = async (req, res) => {
           likes: p.likes || 0,
           comments: p.comments || [],
           isLiked: !!isLiked,
-          isSaved: !!isSaved, 
+          isSaved: !!isSaved,
           userId: {
             _id: u._id,
             username: u.username,
@@ -785,10 +784,12 @@ const addComment = async (req, res) => {
   try {
     const userId = req.user.id;
     const { postId, text } = req.body;
+
     if (!text.trim())
       return res.status(400).json({ success: false, message: "Comment empty" });
 
     const postOwner = await userModel.findOne({ "post._id": postId });
+
     if (!postOwner)
       return res
         .status(404)
@@ -796,7 +797,9 @@ const addComment = async (req, res) => {
 
     const post = postOwner.post.id(postId);
 
-    const currentUser = await userModel.findById(userId).select("username img");
+    const currentUser = await userModel
+      .findById(userId)
+      .select("username img email name");
 
     const newComment = {
       userId: currentUser._id,
@@ -808,10 +811,11 @@ const addComment = async (req, res) => {
 
     post.comments = post.comments || [];
     post.comments.push(newComment);
+
     await postOwner.save();
 
     await Message.updateOne(
-      { post: postId }, // find message that contains this post
+      { post: postId },
       {
         $push: {
           "post.comments": newComment,
@@ -819,12 +823,33 @@ const addComment = async (req, res) => {
       },
     );
 
-    res.json({ success: true, comment: newComment });
+    // ✅ Activity Log
+    await ActivityLog.create({
+      userId: currentUser._id,
+      userName: currentUser.name || currentUser.username,
+      email: currentUser.email,
+      role: "User",
+      action: "ADD_COMMENT",
+      log: "User added a comment",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
+    res.json({
+      success: true,
+      comment: newComment,
+    });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
+
 
 const notes = async (req, res) => {
   try {
@@ -888,22 +913,35 @@ const deletedimg = async (req, res) => {
   try {
     const email = req.user.email;
 
-    const result = await userModel.updateOne(
-      { email: email },
-      { $set: { img: "" } },
-    );
+    const user = await userModel.findOne({ email });
 
-    if (result.modifiedCount > 0) {
-      return res.status(200).json({
-        success: true,
-        message: "Image deleted successfully",
-      });
-    } else {
-      return res.status(400).json({
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        message: "No image found or already deleted",
+        message: "User not found",
       });
     }
+
+    user.img = "";
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "DELETE_PROFILE_IMAGE",
+      log: "User deleted profile image",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Image deleted successfully",
+    });
+
   } catch (error) {
     console.error("Error deleting image:", error);
     res.status(500).json({
@@ -919,7 +957,7 @@ const updatePost = async (req, res) => {
     const { caption } = req.body;
     const email = req.user.email;
 
-    // Find user who owns the post
+    // Find user
     const user = await userModel.findOne({ email });
 
     if (!user) {
@@ -929,7 +967,7 @@ const updatePost = async (req, res) => {
       });
     }
 
-    // Find post inside user's post array
+    // Find post
     const post = user.post.id(postId);
 
     if (!post) {
@@ -943,6 +981,19 @@ const updatePost = async (req, res) => {
     post.caption = caption;
 
     await user.save();
+
+    // ✅ Log activity AFTER success
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_POST",
+      log: "User updated a post",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.json({
       success: true,
@@ -986,6 +1037,19 @@ const deletePost = async (req, res) => {
 
     await user.save();
 
+    // 🔹 SAVE ACTIVITY LOG
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "DELETE",
+      log: "User deleted a post",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
     res.json({
       success: true,
       message: "Post deleted successfully",
@@ -1004,26 +1068,35 @@ const updateGender = async (req, res) => {
     const { gender } = req.body;
     const email = req.user.email;
 
-    console.log("Gender:", gender);
-    console.log("User Email:", email);
+    const user = await userModel.findOne({ email });
 
-    const users = await userModel.updateOne(
-      { email: email },
-      { $set: { gender: gender } },
-      { upsert: true },
-    );
-
-    if (users) {
-      res.status(200).json({
-        success: true,
-        message: "Gender updated successfully ✅",
-      });
-    } else {
-      res.status(400).json({
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        message: "Problem while updating gender ❌",
+        message: "User not found",
       });
     }
+
+    user.gender = gender;
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_GENDER",
+      log: "User updated gender",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Gender updated successfully ✅",
+    });
+
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -1038,12 +1111,37 @@ const updateBio = async (req, res) => {
     const { bio } = req.body;
     const email = req.user.email;
 
-    const user = await userModel.updateOne({ email }, { $set: { bio } });
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // update bio
+    user.bio = bio;
+    await user.save();
+
+    // log activity
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_BIO",
+      log: "User updated bio",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.status(200).json({
       success: true,
       message: "Bio updated successfully",
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -1057,20 +1155,37 @@ const updateNotifications = async (req, res) => {
     const { enabled, duration } = req.body;
     const email = req.user.email;
 
-    await userModel.updateOne(
-      { email },
-      {
-        $set: {
-          "notifications.enabled": enabled,
-          "notifications.duration": duration,
-        },
-      },
-    );
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.notifications.enabled = enabled;
+    user.notifications.duration = duration;
+
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_NOTIFICATION",
+      log: "User updated notification settings",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.status(200).json({
       success: true,
       message: "Notification settings updated ✅",
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -1088,23 +1203,9 @@ const changePassword = async (req, res) => {
       return res.status(400).json({ message: "OTP required" });
     }
 
-    // const savedOtp = await otpModel.findOne({ email });
-
-    // if (!savedOtp) {
-    //   return res.status(400).json({ message: "OTP expired or invalid" });
-    // }
-
-    // if (savedOtp.otp.toString() !== otp) {
-    //   return res.status(400).json({ message: "Incorrect OTP" });
-    // }
-
-    // if (savedOtp.expiresAt < Date.now()) {
-    //   return res.status(400).json({ message: "OTP expired" });
-    // }
-
     const user = await userModel.findOne({ email });
 
-    const isMatch = bcrypt.compare(currentPassword, user.password);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Current password incorrect" });
@@ -1115,13 +1216,25 @@ const changePassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    // Delete OTP after success
     await otpModel.deleteMany({ email });
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "CHANGE_PASSWORD",
+      log: "User changed password",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.status(200).json({
       success: true,
       message: "Password changed successfully",
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
@@ -1132,19 +1245,35 @@ const updateCommentPermission = async (req, res) => {
   try {
     const { permission } = req.body;
 
-    // ✅ Get logged in user id
-    const userId = req.user.id;
+    const user = await userModel.findById(req.user.id);
 
-    await userModel.findByIdAndUpdate(
-      userId,
-      { commentsPermission: permission },
-      { new: true },
-    );
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.commentsPermission = permission;
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_COMMENT_PERMISSION",
+      log: "User updated comment permission",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.status(200).json({
       success: true,
       message: "Comment permission updated ✅",
     });
+
   } catch (err) {
     console.log("Update Error:", err);
     res.status(500).json({ success: false });
@@ -1170,14 +1299,13 @@ const getUserSettings = async (req, res) => {
 
 const addContactNumber = async (req, res) => {
   try {
-    const userId = req.user.id; // from token middleware
+    const userId = req.user.id;
     const { number } = req.body;
 
     if (!number) {
       return res.status(400).json({ message: "Number is required" });
     }
 
-    // ✅ Must be exactly 10 digits
     if (!/^[0-9]{10}$/.test(number)) {
       return res.status(400).json({
         message: "Contact number must be exactly 10 digits",
@@ -1186,18 +1314,27 @@ const addContactNumber = async (req, res) => {
 
     const user = await userModel.findById(userId);
 
-    // ✅ Max 10 contacts allowed
-
-    // ✅ Prevent duplicate numbers
-
-    // ✅ Save number
     user.contacts = number;
     await user.save();
+
+    // ✅ Activity log
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "ADD_CONTACT",
+      log: "User added contact number",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.json({
       message: "Contact number added successfully",
       contacts: user.contacts,
     });
+
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server error" });
@@ -1226,10 +1363,23 @@ const deleteContact = async (req, res) => {
     const user = await userModel.findById(req.user.id);
 
     user.contacts = user.contacts.filter((n) => n !== number);
-
     await user.save();
 
+    // ✅ Activity log
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "DELETE_CONTACT",
+      log: "User deleted contact number",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
     res.json({ contacts: user.contacts });
+
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -1240,15 +1390,35 @@ const updateContact = async (req, res) => {
     const email = req.user.email;
     const { newNumber } = req.body;
 
-    const user = await userModel.updateOne(
-      { email: email }, // find user by email
-      { $set: { contacts: newNumber } }, // update contact field
-    );
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.contacts = newNumber;
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_CONTACT",
+      log: "User updated contact number",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.status(200).json({
       success: true,
       message: "Contact number updated successfully ✅",
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -1260,22 +1430,38 @@ const updateContact = async (req, res) => {
 const updateBirthday = async (req, res) => {
   try {
     const email = req.user.email;
-
     const { month, day, year } = req.body;
 
-    const user = await userModel.findOneAndUpdate(
-      { email },
-      {
-        birthday: { month, day, year },
-      },
-      { new: true },
-    );
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.birthday = { month, day, year };
+    await user.save();
+
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_BIRTHDAY",
+      log: "User updated birthday",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.status(200).json({
       success: true,
       message: "Birthday updated successfully ✅",
       birthday: user.birthday,
     });
+
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -1305,15 +1491,39 @@ const testNotification = async (req, res) => {
 };
 
 const updateName = async (req, res) => {
-  const email = req.user.email;
-  const { name } = req.body;
+  try {
+    const email = req.user.email;
+    const { name } = req.body;
 
-  await userModel.updateOne({ email }, { $set: { name } });
+    const user = await userModel.findOne({ email });
 
-  res.json({ success: true });
-};
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
+    user.name = name;
+    await user.save();
 
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "UPDATE_NAME",
+      log: "User updated name",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+};;
 
 const savePost = async (req, res) => {
   try {
@@ -1329,7 +1539,9 @@ const savePost = async (req, res) => {
     const user = await userModel.findOne({ email: req.user.email });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     if (!user.savedPosts) {
@@ -1337,12 +1549,12 @@ const savePost = async (req, res) => {
     }
 
     const alreadySaved = user.savedPosts.some(
-      (p) => p.postId.toString() === postId
+      (p) => p.postId.toString() === postId,
     );
 
     if (alreadySaved) {
       user.savedPosts = user.savedPosts.filter(
-        (p) => p.postId.toString() !== postId
+        (p) => p.postId.toString() !== postId,
       );
 
       await user.save();
@@ -1367,13 +1579,11 @@ const savePost = async (req, res) => {
       isSaved: true,
       message: "Post saved successfully",
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 const getSavedPosts = async (req, res) => {
   try {
@@ -1386,7 +1596,6 @@ const getSavedPosts = async (req, res) => {
     let allSavedPosts = [];
 
     for (const saved of currentUser.savedPosts) {
-
       let postOwner;
 
       // If the saved post belongs to current user
@@ -1399,7 +1608,7 @@ const getSavedPosts = async (req, res) => {
       if (!postOwner) continue;
 
       const postData = postOwner.post.find(
-        (p) => p._id.toString() === saved.postId.toString()
+        (p) => p._id.toString() === saved.postId.toString(),
       );
 
       if (!postData) continue;
@@ -1416,7 +1625,6 @@ const getSavedPosts = async (req, res) => {
     }
 
     res.status(200).json(allSavedPosts);
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
@@ -1480,7 +1688,6 @@ const deleteComment = async (req, res) => {
     const { postId, commentId } = req.body;
     const userId = req.user.id;
 
-    // Find the user who owns the post
     const postOwner = await userModel.findOne({ "post._id": postId });
 
     if (!postOwner) {
@@ -1491,14 +1698,8 @@ const deleteComment = async (req, res) => {
     }
 
     const post = postOwner.post.id(postId);
-    if (!post) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
-      });
-    }
-
     const comment = post.comments.id(commentId);
+
     if (!comment) {
       return res.status(404).json({
         success: false,
@@ -1506,7 +1707,6 @@ const deleteComment = async (req, res) => {
       });
     }
 
-    // ✅ Only comment owner can delete
     if (comment.userId.toString() !== userId) {
       return res.status(403).json({
         success: false,
@@ -1517,10 +1717,26 @@ const deleteComment = async (req, res) => {
     comment.deleteOne();
     await postOwner.save();
 
+    const user = await userModel.findById(userId);
+
+    // ✅ Activity log
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "DELETE_COMMENT",
+      log: "User deleted a comment",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
     res.json({
       success: true,
       message: "Comment deleted successfully",
     });
+
   } catch (error) {
     console.error("Delete comment error:", error);
     res.status(500).json({
@@ -1789,20 +2005,37 @@ const deleteNote = async (req, res) => {
   try {
     const email = req.user.email;
 
-    await userModel.updateOne(
-      { email },
-      {
-        $set: {
-          note: "",
-          noteCreatedAt: null,
-        },
-      },
-    );
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.note = "";
+    user.noteCreatedAt = null;
+    await user.save();
+
+    // ✅ Activity log
+    await ActivityLog.create({
+      userId: user._id,
+      userName: user.name,
+      email: user.email,
+      role: "User",
+      action: "DELETE_NOTE",
+      log: "User deleted note",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
 
     res.status(200).json({
       success: true,
       message: "Note deleted successfully",
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -1810,6 +2043,8 @@ const deleteNote = async (req, res) => {
     });
   }
 };
+
+
 const seleccteduser = async (req, res) => {
   try {
     // Correctly get username from query parameters
@@ -1943,6 +2178,31 @@ const checkisliked = async (req, res) => {
   }
 };
 
+const logoutUser = async (req, res) => {
+  try {
+    const user = req.user;
+    console.log(user);
+
+    const log = new ActivityLog({
+      userId: user._id,
+      userName: "User",
+      email: user.email,
+      role: "User",
+      action: "LOGOUT",
+      log: "User Logged Out",
+      ip: req.ip,
+      device: req.headers["user-agent"],
+      time: new Date(),
+    });
+
+    await log.save();
+
+    res.json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Logout error" });
+  }
+};
+
 export {
   sendotp,
   verifyotp,
@@ -2002,4 +2262,5 @@ export {
   seleccteduser,
   getSinglePost,
   checkisliked,
+  logoutUser,
 };
