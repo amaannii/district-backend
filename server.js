@@ -7,6 +7,7 @@ import adminrouter from "./Routes/admin.js";
 import http from "http";
 import { Server } from "socket.io";
 import message from "./Routes/messages.js";
+import Message from "./models/Message.js";
 
 dotenv.config();
 
@@ -45,7 +46,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://district-frontend.onrender.com",
     credentials: true,
   },
 });
