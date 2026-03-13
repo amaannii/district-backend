@@ -6,7 +6,6 @@ import userrouter from "./Routes/user.js";
 import adminrouter from "./Routes/admin.js";
 import http from "http";
 import { Server } from "socket.io";
-import Message from "./models/Message.js";
 import message from "./Routes/messages.js";
 
 dotenv.config();
