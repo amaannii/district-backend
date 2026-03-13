@@ -28,7 +28,7 @@ app.use(express.json());
 // );
 app.use(
   cors({
-    origin: "https://district-frontend.onrender.com",
+    origin:[ "https://district-frontend.onrender.com", "https://district-frontend.onrender.com/",],
     credentials: true,
   }),
 );
