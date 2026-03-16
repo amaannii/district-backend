@@ -312,7 +312,7 @@ const googlelogin = async (req, res) => {
 
     // 🟢 USER DOES NOT EXIST → CREATE
     if (!user) {
-      user = new userModel({
+      user =  new userModel({
         name,
         email,
         role: "user", // default role
@@ -324,8 +324,9 @@ const googlelogin = async (req, res) => {
     // 🔐 CREATE TOKEN
     const token = jwt.sign(
       {
+        id:user._id,
         email: user.email,
-        role: user.role,
+        role: "user",
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" },
@@ -672,6 +673,7 @@ const notificationdelete = async (req, res) => {
 const getFeedPosts = async (req, res) => {
   try {
     const currentUserId = req.user.id;
+    
 
     const currentUser = await userModel.findById(currentUserId);
 
@@ -714,7 +716,7 @@ const getFeedPosts = async (req, res) => {
 
     res.json({ success: true, posts: feedPosts });
   } catch (err) {
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false,err });
   }
 };
 
