@@ -7,6 +7,7 @@ import adminrouter from "./Routes/admin.js";
 import http from "http";
 import { Server } from "socket.io";
 import message from "./Routes/messages.js";
+import Message from "./models/Message.js";
 
 dotenv.config();
 
@@ -20,18 +21,21 @@ connected;
 // Middleware
 app.use(express.json());
 
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  }),
-);
+
 // app.use(
 //   cors({
-//     origin:[ "https://district-frontend.onrender.com", "https://district-frontend.onrender.com/",],
+//     origin: "http://localhost:5173",
 //     credentials: true,
 //   }),
 // );
+
+
+ app.use(
+   cors({
+     origin:[ "https://district-frontend.onrender.com", "https://district-frontend.onrender.com/",],
+     credentials: true,
+   }),
+ );
 
 /* ================= ROUTES ================= */
 
@@ -45,9 +49,13 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://district-frontend.onrender.com",
     credentials: true,
   },
+  // cors: {
+  //   origin: "http://localhost:5173",
+  //   credentials: true,
+  // },
 });
 
 io.on("connection", (socket) => {
