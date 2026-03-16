@@ -1892,26 +1892,28 @@ const unconnect = async (req, res) => {
 const connectionStatus = async (req, res) => {
   try {
     const email = req.user.email;
-    const { username } = req.params;
+    const username = req.params.username?.trim().toLowerCase();
 
     const currentUser = await userModel.findOne({ email });
+    
+    const user = await userModel.findOne({ username });
 
     if (!currentUser) {
       return res.json({ status: "none" });
     }
 
-    // ✅ Check CONNECTED list
-    const isConnected = currentUser.connected?.some(
-      (user) => user.username === username,
+    // CHECK CONNECTED
+    const isConnected = currentUser.connecting?.some(
+      (user) => user.username?.toLowerCase() === username
     );
 
     if (isConnected) {
       return res.json({ status: "connected" });
     }
 
-    // ✅ Check CONNECTING (sent requests)
-    const isRequested = currentUser.connecting?.some(
-      (user) => user.username === username,
+    // CHECK CONNECTING
+    const isRequested = user.request?.some(
+      (user) => user.username?.toLowerCase() === currentUser.username
     );
 
     if (isRequested) {
@@ -1919,6 +1921,7 @@ const connectionStatus = async (req, res) => {
     }
 
     return res.json({ status: "none" });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ status: "none" });
