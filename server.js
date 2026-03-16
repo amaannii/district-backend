@@ -27,6 +27,7 @@ app.use(express.json());
 //     credentials: true,
 //   }),
 // );
+
 app.use(
   cors({
     origin:[ "https://district-frontend.onrender.com", "https://district-frontend.onrender.com/",],
@@ -49,6 +50,10 @@ const io = new Server(server, {
     origin: "https://district-frontend.onrender.com",
     credentials: true,
   },
+  // cors: {
+  //   origin: "http://localhost:5173",
+  //   credentials: true,
+  // },
 });
 
 io.on("connection", (socket) => {
