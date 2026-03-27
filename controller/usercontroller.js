@@ -7,8 +7,11 @@ import jwt from "jsonwebtoken";
 import ActivityLog from "../models/ActivityLog.js";
 import mongoose from "mongoose";
 import Message from "../models/Message.js";
+import { Resend } from "resend";
 
 dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -39,18 +42,18 @@ const sendotp = async (req, res) => {
   console.log("OTP for", email, otp);
 
   try {
-    await transporter.sendMail({
-      from: process.env.EMAIL,
-      to: email,
-      subject: "OTP Verification",
-      text: `Your OTP is ${otp}. Valid for 5 minutes.`,
-    });
+  await resend.emails.send({
+    from: "onboarding@resend.dev",
+    to: email,
+    subject: "OTP Verification",
+    text: `Your OTP is ${otp}. Valid for 5 minutes.`,
+  });
 
-    res.status(200).json({ message: "OTP sent successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to send OTP" });
-  }
+  res.status(200).json({ message: "OTP sent successfully" });
+} catch (error) {
+  console.error(error);
+  res.status(500).json({ message: "Failed to send OTP" });
+}
 };
 
 const verifyotp = async (req, res) => {
